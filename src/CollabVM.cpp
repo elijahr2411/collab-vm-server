@@ -2291,6 +2291,11 @@ void CollabVMServer::OnConnectInstruction(const std::shared_ptr<CollabVMUser>& u
 			delete user->guac_user;
 			user->guac_user = nullptr;
 			SendWSMessage(*user, "7.connect,1.2;");
+
+			unique_lock<std::mutex> lock(process_queue_lock_);
+			process_queue_.push(new UserAction(*user, ActionType::kRemoveConnection));
+			lock.unlock();
+			process_wait_.notify_one();
 		}
 		return;
 	}
