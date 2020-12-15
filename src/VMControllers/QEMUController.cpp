@@ -8,7 +8,11 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#ifdef NO_WORDEXP
+#include <glob.h>
+#else
 #include <wordexp.h>
+#endif
 #include <system_error>
 #include <signal.h>
 #endif
@@ -915,6 +919,32 @@ std::vector<const char*> QEMUController::SplitCommandLine(const char* command)
 	// Posix.
 #ifndef _WIN32
 	{
+#ifdef NO_WORDEXP
+		glob_t p;
+
+		if (glob(command, 0, NULL, &p))
+		{
+			return cmdList;
+		}
+
+		cmdList.reserve(p.gl_pathc);
+
+		for (i = 0; i < p.gl_pathc; i++)
+		{
+			int len = strlen(p.gl_pathv[i])+1;
+			if (!len)
+				continue;
+			char* arg = new char[len];
+			memcpy(arg, p.gl_pathv[i], len);
+
+			cmdList.push_back(arg);
+		}
+
+	fail:
+		globfree(&p);
+
+		return cmdList;
+#else
 		wordexp_t p;
 
 		// Note! This expands shell variables.
@@ -940,6 +970,7 @@ std::vector<const char*> QEMUController::SplitCommandLine(const char* command)
 		wordfree(&p);
 
 		return cmdList;
+#endif
 	}
 #else // WIN32
 	{

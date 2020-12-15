@@ -9,7 +9,10 @@ CCFLAGS += -g -O0 -D_DEBUG -DDEBUG
 LDFLAGS = -g
 else
 # release mode, build with optimizations
-CCFLAGS += -O3 -ffast-math -march=native -mtune=native
+CCFLAGS += -O3 -ffast-math
+ifneq ($(NO_NATIVE),1)
+CCFLAGS += -march=native -mtune=native
+endif
 LDFLAGS = -s
 endif
 

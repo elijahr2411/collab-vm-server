@@ -41,10 +41,29 @@ build(){
 		UNAME_KERN=$(printf "Windows %s" $WIN_VER)
 		log "Building on $UNAME_KERN $(uname -m).";
 	else
-		# LSB defines /etc/os-release (Some distros also use lsb-release, however os-release is ACTUALLY the one LSB defines as standard, and thus will be pressent in more
-		# than a couple distros)
-		UNAME_KERN=$(cat /etc/os-release | grep "PRETTY_NAME" | sed 's/PRETTY_NAME=//g' | sed 's/\"//g');
-		log "Building on $UNAME_KERN.";
+		if [[ "$(uname -o)" == "Android" ]]; then
+			ANDSDK_VER=$(printf "$(grep ro.build.version.sdk= /system/build.prop)" | cut -d= -f2)
+			AND_VER=Unknown
+			case $ANDSDK_VER in
+				"21" ) AND_VER="5.0";;
+				"22" ) AND_VER="5.1";;
+				"23" ) AND_VER="6.0";;
+				"24" ) AND_VER="7.0";;
+				"25" ) AND_VER="7.1";;
+				"26" ) AND_VER="8.0";;
+				"27" ) AND_VER="8.1";;
+				"28" ) AND_VER="9.0";;
+				"29" ) AND_VER="10.0";;
+				"30" ) AND_VER="11.0";;
+			esac
+			UNAME_KERN=$(printf "Android %s" $AND_VER)
+			log "Building on $UNAME_KERN $(uname -m)"
+		else
+			# LSB defines /etc/os-release (Some distros also use lsb-release, however os-release is ACTUALLY the one LSB defines as standard, and thus will be pressent in more
+			# than a couple distros)
+			UNAME_KERN=$(cat /etc/os-release | grep "PRETTY_NAME" | sed 's/PRETTY_NAME=//g' | sed 's/\"//g');
+			log "Building on $UNAME_KERN.";
+		fi
 	fi
 
 	log "Copying sources."

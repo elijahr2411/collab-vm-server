@@ -38,9 +38,22 @@ endif
 
 else
 
+# Is it Termux?
+$(shell command -v termux-setup-storage >/dev/null)
+
+ifeq ($(.SHELLSTATUS),0)
+
+$(info Compiling targeting Android (Termux))
+MKCONFIG=mk/termux.mkc
+
+else
+
 # Assume Linux or other *nix-likes
 $(info Compiling targeting *nix)
 MKCONFIG=mk/linux.mkc
+
+endif
+
 BINDIR=bin/
 ARCH=$(shell uname -m)
 
