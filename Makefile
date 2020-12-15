@@ -43,10 +43,13 @@ $(shell command -v termux-setup-storage >/dev/null)
 
 ifeq ($(.SHELLSTATUS),0)
 
+TERMUX=1
 $(info Compiling targeting Android (Termux))
 MKCONFIG=mk/termux.mkc
 
 else
+
+TERMUX=0
 
 # Assume Linux or other *nix-likes
 $(info Compiling targeting *nix)
@@ -95,6 +98,14 @@ ifeq ($(CYGWIN), 1)
 else
 
 	@./scripts/copy_dlls_mw.sh $(ARCH) $(BINDIR)
+
+endif
+
+else
+
+ifeq ($(TERMUX), 1)
+
+	@./scripts/copy_dlls_tmux.sh $(ARCH) $(BINDIR)
 
 endif
 

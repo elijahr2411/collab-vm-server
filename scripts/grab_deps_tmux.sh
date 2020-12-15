@@ -64,6 +64,7 @@ main(){
 	sed -i -e 's/KEY_SOFT1, KEY_SOFT2, //g' -e '/KEY_CENTER/d' -e '/KEY_SHARP/d' -e '/KEY_STAR/d' examples/android/jni/fbvncserver.c
 	autoreconf -fi
 	configure_build;
-	log "All source dependencies built."
+	log "All source dependencies built.";
 	log "Dependency grab finished.";
+	log "Be sure to copy the ODB-compiled files (*-odb.*xx) to $CVM_HOME/obj.";
 };main;
