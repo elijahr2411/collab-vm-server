@@ -42,20 +42,7 @@ build(){
 		log "Building on $UNAME_KERN $(uname -m).";
 	else
 		if [[ "$(uname -o)" == "Android" ]]; then
-			ANDSDK_VER=$(printf "$(grep ro.build.version.sdk= /system/build.prop)" | cut -d= -f2)
-			AND_VER=Unknown
-			case $ANDSDK_VER in
-				"21" ) AND_VER="5.0";;
-				"22" ) AND_VER="5.1";;
-				"23" ) AND_VER="6.0";;
-				"24" ) AND_VER="7.0";;
-				"25" ) AND_VER="7.1";;
-				"26" ) AND_VER="8.0";;
-				"27" ) AND_VER="8.1";;
-				"28" ) AND_VER="9.0";;
-				"29" ) AND_VER="10.0";;
-				"30" ) AND_VER="11.0";;
-			esac
+			AND_VER=$(getprop|grep ro.build.version.release|cut -d[ -f3|cut -d] -f1)
 			UNAME_KERN=$(printf "Android %s" $AND_VER)
 			log "Building on $UNAME_KERN $(uname -m)"
 		else

@@ -9,7 +9,7 @@ ODB = true
 
 NO_NATIVE=1
 
-LIBS = -pthread -lturbojpeg -ljpeg -lboost_system -lpng -lz -lcairo -lpixman-1 -ldl -lsqlite3 -landroid-glob -Lcvmlib/lib -lodb-sqlite -lodb -luuid -lvncclient
+LIBS = -pthread -latomic -lturbojpeg -ljpeg -lboost_system -lpng -lz -lcairo -lpixman-1 -ldl -lsqlite3 -landroid-glob -Lcvmlib/lib -lodb-sqlite -lodb -luuid -lvncclient
 
 OBJDIR = obj
 BINDIR = bin
