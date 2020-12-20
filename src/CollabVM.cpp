@@ -2700,7 +2700,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 	      for (std::shared_ptr<CollabVMUser> endThisTurn : it->second->GetTurnQueue()) {
 		it->second->EndTurn(endThisTurn);
 	      };
-	      it->second->EndTurn(it->second->CurrentTurn());
+	      if (it->second->CurrentTurn()) it->second->EndTurn(it->second->CurrentTurn());
 	    };
 	  };
 	  break;
