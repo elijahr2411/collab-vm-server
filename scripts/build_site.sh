@@ -11,13 +11,19 @@ build(){
 	DATE=$(date +"%x %I:%M %p")
 	UNAME_ARCH=$1
 	UNAME_KERN=$(uname -srv)
-	CVM_VERSION="v1.2.10~6969"
+	CVM_VERSION="v1.2.10~yellows111+darkok"
 	if [ -e ./.git/refs/heads/master ]
 	then
+		UGIT_CHECKTAINTED=$(git status --porcelain --untracked-files=no | wc -l)
 		UGIT_COMMIT_ID=$(git rev-parse head >/dev/null 2>&1 && git rev-parse head || git rev-parse master)
 		UGIT_FORKNAME=$(git remote get-url origin)
 		UGIT_FORKURL=$UGIT_FORKNAME
+		if [ $UGIT_CHECKTAINTED -gt 0 ];
+		then UGIT_TAINTED=" (Tainted)";
+		else UGIT_TAINTED="";
+		fi;
 	else
+		UGIT_TAINTED=""
 		UGIT_COMMIT_ID="Unknown or Unmanaged"
 		UGIT_FORKNAME="Unknown"
 		UGIT_FORKURL="https://github.com/computernewb/collab-vm-server"
@@ -57,13 +63,14 @@ build(){
 	[[ ! -d "http/" ]] && mkdir http
 	cp -r http_src/* http/
 	log "Preprocessing..."
-
+	
 	# Actually preprocess
 	INSRC=$(cat http/index.html.in)
 	INSRC=${INSRC//"[HOST_DATE]"/$DATE}
 	INSRC=${INSRC//"[HOST_UNAME_ARCH]"/$UNAME_ARCH}
 	INSRC=${INSRC//"[HOST_UNAME_OS]"/$UNAME_KERN}
 	INSRC=${INSRC//"[GIT_ID]"/$UGIT_COMMIT_ID}
+	INSRC=${INSRC//"[GIT_IS_TAINTED]"/$UGIT_TAINTED}
 	INSRC=${INSRC//"[GIT_FORK_NAME]"/$UGIT_FORKNAME}
 	INSRC=${INSRC//"[GIT_FORK_URL]"/$UGIT_FORKURL}
 	INSRC=${INSRC//"[CVM_VERSION]"/$CVM_VERSION}

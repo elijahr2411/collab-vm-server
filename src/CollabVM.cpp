@@ -16,6 +16,8 @@ hannah
 LoveEevee
 Matthew
 Vanilla
+DarkOK
+yellows111
 and the rest of the Collab VM Community for all their help over the years,
 including, but of course not limited to:
 Donating, using the site, telling their friends/family, being a great help, and more.
@@ -137,7 +139,10 @@ enum admin_opcodes_ {
 	kRestartVM,		// Restart one or more VM hypervisors
 	kBanUser,		// Ban user's IP address
 	kCancelVote,	// Cancel a Vote for Reset without resetting
-	kMuteUser		// Mute a user
+	kMuteUser,		// Mute a user
+	kForceRemoveUser,		// Forcefully Remove a user from a VM (Kick)
+	kEndUserTurn, // End a user's turn
+	kEndTurnQueue	
 };
 
 enum SERVER_SETTINGS
@@ -2371,6 +2376,9 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		&& (opcode != kBanUser || !(database_.Configuration.ModPerms & 4))
 		&& (opcode != kCancelVote || !(database_.Configuration.ModPerms & 8))
 		&& (opcode != kMuteUser || !(database_.Configuration.ModPerms & 16))
+		&& (opcode != kForceRemoveUser || !(database_.Configuration.ModPerms & 32))
+		&& (opcode != kEndUserTurn || !(database_.Configuration.ModPerms & 64))
+		&& (opcode != kEndTurnQueue || !(database_.Configuration.ModPerms & 64))
 		) return;
 
 	switch (opcode)
@@ -2621,6 +2629,8 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 					std::string banCmd = database_.Configuration.BanCommand;
 					for (size_t it = 0; banCmd.find("$IP",it) != std::string::npos; it = banCmd.find("$IP",it))
 						banCmd.replace(banCmd.find("$IP",it),3,banUser->ip_data.GetIP());
+					for (size_t it = 0; banCmd.find("$NAME",it) != std::string::npos; it = banCmd.find("$NAME",it))
+						banCmd.replace(banCmd.find("$NAME",it),5,*banUser->username);
 					// Block user's IP
 					ExecuteCommandAsync(banCmd);
 					// Disconnect user
@@ -2652,6 +2662,47 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 				}
 			}
 		break;
+    case kForceRemoveUser:
+        if (args.size() == 2) {
+            for (auto it = connections_.begin(); it != connections_.end(); it++)
+            {
+                std::shared_ptr<CollabVMUser> kickUser = *it;
+                if (!kickUser->username) continue;
+                if (*kickUser->username == args[1])
+                {
+                    // Disconnect user
+                    unique_lock<std::mutex> lock(process_queue_lock_);
+                    process_queue_.push(new UserAction(*kickUser, ActionType::kRemoveConnection));
+                    lock.unlock();
+                    process_wait_.notify_one();
+                    break;
+                };
+            };
+		};
+        break;
+	case kEndUserTurn:
+	  if (args.size() == 2) {
+	    for (auto it = connections_.begin(); it != connections_.end(); it++) {
+	      std::shared_ptr<CollabVMUser> endTurnUser = *it;
+	      if (!endTurnUser->username) continue;
+	      if (*endTurnUser->username == args[1]) {
+		user->vm_controller->EndTurn(endTurnUser);
+		break;
+	      };
+	    };
+	  };
+	  break;
+	case kEndTurnQueue:
+	  if (args.size() == 2) {
+	    auto it = vm_controllers_.find(args[1]);
+	    if (it != vm_controllers_.end()) {
+	      for (std::shared_ptr<CollabVMUser> endThisTurn : it->second->GetTurnQueue()) {
+		it->second->EndTurn(endThisTurn);
+	      };
+	      it->second->EndTurn(it->second->CurrentTurn());
+	    };
+	  };
+	  break;
 	}
 }
 
