@@ -10,7 +10,7 @@ The HTTP Directory is optional and by default it looks for a folder called "http
 
 When you start the server, you'll get a message that a new database was created. The first thing you'll want to do is go to the admin panel which is located at localhost:(port)/admin/config.html. Type the password "collabvm" (No quotes). The first thing you'll want to do is immediately change the password as it is highly insecure. Then you'll want to create a VM. CollabVM currently only supports QEMU at this time 
 
-For more information on the admin panel, visit https://computernewb.com/wiki/CollabVM Server 1.x/Admin Panel
+For more information on the admin panel, visit [https://computernewb.com/wiki/CollabVM Server 1.x/Admin Panel](https://computernewb.com/wiki/CollabVM%20Server%201.x/Admin%20Panel)
 
 ### Compilation
 Compiling the server is fairly easy. The server is confirmed to work on the i386 (32-bit), amd64 (64-bit), and armhf architectures on both Windows and Linux. It should also work on Aarch64, PowerPC, and MIPS machines, but note that this isn't tested.
