@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
       - uses: mstachniuk/ci-skip@master
         with:
-          commit-filter: '[skip ci];[ci skip]'
+          commit-filter: '[skip ci];[ci skip];[no ci]'
           commit-filter-separator: ';'
       - run: echo "::set-output name=result::${CI_SKIP}"
         id: result_step
@@ -35,9 +35,10 @@ jobs:
         ./scripts/grab_deps_linux.sh 
     - name: Make PNG build
       run: |
-        mkdir obj
-        odb -d sqlite -o obj -s -q src/Database/Config.h -v -x -mtune=generic
-        odb -d sqlite -o obj -s -q src/Database/VMSettings.h -v -x -mtune=generic
+        sudo apt-get update
+        ./scripts/grab_deps_linux.sh 
+    - name: make
+      run: make
   build_jpeg:
     needs: check_skip
     if: ${{ needs.check_skip.outputs.skip == 'false' }}
@@ -51,6 +52,7 @@ jobs:
         ./scripts/grab_deps_linux.sh 
     - name: Make JPEG build
       run: |
-        mkdir obj
-        odb -d sqlite -o obj -s -q src/Database/Config.h -v
-        odb -d sqlite -o obj -s -q src/Database/VMSettings.h -v
+        sudo apt-get update
+        ./scripts/grab_deps_linux.sh 
+    - name: make
+      run: make JPEG=1
