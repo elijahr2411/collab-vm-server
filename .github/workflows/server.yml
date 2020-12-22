@@ -33,7 +33,8 @@ jobs:
       run: |
         sudo apt-get update
         ./scripts/grab_deps_linux.sh 
-        
+    - name: Make PNG build
+      run: make
   build_jpeg:
     needs: check_skip
     if: ${{ needs.check_skip.outputs.skip == 'false' }}
@@ -45,3 +46,5 @@ jobs:
       run: |
         sudo apt-get update
         ./scripts/grab_deps_linux.sh 
+    - name: Make JPEG build
+      run: make JPEG=1
