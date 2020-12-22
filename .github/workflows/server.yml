@@ -8,7 +8,7 @@ on:
 
 jobs:
   check_skip:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     outputs:
       skip: ${{ steps.result_step.outputs.result }}
     steps:
@@ -21,39 +21,3 @@ jobs:
           commit-filter-separator: ';'
       - run: echo "::set-output name=result::${CI_SKIP}"
         id: result_step
-
-  build_png:
-    needs: check_skip
-    runs-on: ubuntu-18.04
-    
-    steps:
-    - uses: actions/checkout@v2
-    - name: prepare
-    - run: sudo apt-get update
-    - run: sudo apt-get install -y odb
-    - run: ./scripts/grab_deps_linux.sh 
-    - name: make
-    - run: make
-    - name: Upload Artifact - PNG
-      uses: 'actions/upload-artifact@v2'
-      with:
-        name: Server Binary - PNG
-        path: './bin/**/*'
-  build_jpeg:
-    needs: check_skip
-    runs-on: ubuntu-18.04
-    
-    steps:
-    - uses: actions/checkout@v2
-    - name: prepare
-    - run: sudo apt-get update
-    - run: sudo apt-get install -y odb
-    - run: ./scripts/grab_deps_linux.sh 
-    - name: make-jpeg
-    - run: make JPEG=1
-    - name: Upload Artifact - JPEG
-      uses: 'actions/upload-artifact@v2'
-      with:
-        name: Server Binary - JPEG
-        path: './bin/**/*'
-     
