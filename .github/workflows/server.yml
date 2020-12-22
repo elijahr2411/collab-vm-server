@@ -30,6 +30,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install depends
-    - run: sudo apt-get update
-    - run: sudo apt-get install -y odb
-    - run: ./scripts/grab_deps_linux.sh 
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y odb
+        ./scripts/grab_deps_linux.sh 
