@@ -21,3 +21,15 @@ jobs:
           commit-filter-separator: ';'
       - run: echo "::set-output name=result::${CI_SKIP}"
         id: result_step
+
+  build_png:
+    needs: check_skip
+    if: ${{ needs.check_skip.outputs.skip == 'false' }}
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install depends
+    - run: sudo apt-get update
+    - run: sudo apt-get install -y odb
+    - run: ./scripts/grab_deps_linux.sh 
