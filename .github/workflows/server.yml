@@ -34,9 +34,10 @@ jobs:
         sudo apt-get update
         ./scripts/grab_deps_linux.sh 
     - name: Make PNG build
-    - run: mkdir obj
-    - run: odb -d sqlite -o obj -s -q src/Database/Config.h
-    - run: odb -d sqlite -o obj -s -q src/Database/VMSettings.h
+    - run: |
+        mkdir obj
+        odb -d sqlite -o obj -s -q src/Database/Config.h
+        odb -d sqlite -o obj -s -q src/Database/VMSettings.h
   build_jpeg:
     needs: check_skip
     if: ${{ needs.check_skip.outputs.skip == 'false' }}
@@ -49,6 +50,7 @@ jobs:
         sudo apt-get update
         ./scripts/grab_deps_linux.sh 
     - name: Make JPEG build
-    - run: mkdir obj
-    - run: odb -d sqlite -o obj -s -q src/Database/Config.h
-    - run: odb -d sqlite -o obj -s -q src/Database/VMSettings.h
+    - run: |
+        mkdir obj
+        odb -d sqlite -o obj -s -q src/Database/Config.h
+        odb -d sqlite -o obj -s -q src/Database/VMSettings.h
