@@ -36,8 +36,8 @@ jobs:
     - name: Make PNG build
       run: |
         mkdir obj
-        odb -d sqlite -o obj -s -q src/Database/Config.h -v
-        odb -d sqlite -o obj -s -q src/Database/VMSettings.h -v
+        odb -d sqlite -o obj -s -q src/Database/Config.h -v -x -mtune=generic
+        odb -d sqlite -o obj -s -q src/Database/VMSettings.h -v -x -mtune=generic
   build_jpeg:
     needs: check_skip
     if: ${{ needs.check_skip.outputs.skip == 'false' }}
