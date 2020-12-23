@@ -34,7 +34,9 @@ jobs:
         sudo apt-get update
         ./scripts/grab_deps_linux.sh 
     - name: Make PNG build
-      run: make -j$(nproc)
+      run: |
+          export CXXFLAGS="-static -static-libgcc -static-libstdc++"
+          make -j$(nproc) JPEG=1
     - name: Upload Artifact - PNG
       uses: 'actions/upload-artifact@v2'
       with:
@@ -53,7 +55,9 @@ jobs:
         sudo apt-get update
         ./scripts/grab_deps_linux.sh 
     - name: Make JPEG build
-      run: make -j$(nproc) JPEG=1
+      run: |
+          export CXXFLAGS="-static -static-libgcc -static-libstdc++"
+          make -j$(nproc) JPEG=1
     - name: Upload Artifact - JPEG
       uses: 'actions/upload-artifact@v2'
       with:
