@@ -19,9 +19,7 @@ DarkOK
 LoveEevee
 Matthew
 Vanilla
-DarkOK
 yellows111
-6969/"6-9-6-9"
 and the rest of the Collab VM Community for all their help over the years,
 including, but of course not limited to:
 Donating, using the site, telling their friends/family, being a great help, and more.
