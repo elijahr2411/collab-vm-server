@@ -117,3 +117,13 @@ jobs:
       with:
         name: Server Binary - JPEG
         path: './bin/**/*'
+    - name: "Bonus: compile odb .cxx files"
+      run: |
+          mkdir odbout
+          odb -d sqlite -o odbout -s -q src/Database/VMSettings.h
+          odb -d sqlite -o odbout -s -q src/Database/Config.h
+    - name: Upload Artifact - ODB files
+      uses: 'actions/upload-artifact@v2'
+      with:
+        name: ODB files for building locally (JPEG Only)
+        path: './odbout/*.cxx'
