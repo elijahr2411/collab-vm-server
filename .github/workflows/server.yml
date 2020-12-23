@@ -31,9 +31,12 @@ jobs:
             with:
                 repository: LibVNC/libvncserver
                 submodules: recursive
-          - run: |
+          - name: Install CMake
+            run: |
               sudo apt update
               sudo apt install cmake
+          - name: Compile Static LibVNC Binaries
+            run: |
               mkdir build
               cd build
               cmake .. -DBUILD_SHARED_LIBS:BOOL="0" -DWITH_FFMPEG:BOOL="0" -DWITH_GTK:BOOL="0" -DWITH_SDL:BOOL="0"
@@ -54,7 +57,13 @@ jobs:
       run: |
         sudo apt update
         ./scripts/grab_deps_linux.sh 
-        sudo apt install libvncserver-dev=0.9.11
+        mkdir cvmlib
+        mkdir ./cvmlib/lib
+    - name: Getting LibVNC...
+      uses: actions/download-artifact@v2
+      with:
+          name: LibVNC_Static
+          path: ./cvmlib/lib
     - name: Make PNG build      
       run: |
         export LDINSERTS="-Xlinker --verbose "
@@ -76,7 +85,13 @@ jobs:
       run: |
         sudo apt update
         ./scripts/grab_deps_linux.sh 
-        sudo apt install libvncserver-dev=0.9.11
+        mkdir cvmlib
+        mkdir ./cvmlib/lib
+    - name: Getting LibVNC...
+      uses: actions/download-artifact@v2
+      with:
+          name: LibVNC_Static
+          path: ./cvmlib/lib
     - name: Make JPEG build
       run: |
         export LDINSERTS="-Xlinker --verbose "

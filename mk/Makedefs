@@ -3,7 +3,7 @@
 
 CCFLAGS = -Isrc -Isrc/uriparser
 ifeq ($(STATIC),1)
-LIBS += -static -static-libgcc
+LIBS += -static -static-libgcc -Lcvmlib/lib
 endif
 ifeq ($(DEBUG),1)
 # debug mode
