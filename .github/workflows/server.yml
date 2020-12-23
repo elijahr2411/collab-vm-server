@@ -31,16 +31,17 @@ jobs:
             with:
                 repository: LibVNC/libvncserver
                 submodules: recursive
-          - name: Install CMake
+          - name: Install CMake, turbojpeg and libpng
             run: |
               sudo apt update
-              sudo apt install cmake
+              sudo apt install cmake libturbojpeg0-dev libpng-dev
           - name: Compile Static LibVNC Binaries
             run: |
               mkdir build
               cd build
-              cmake .. -DBUILD_SHARED_LIBS:BOOL="0" -DWITH_FFMPEG:BOOL="0" -DWITH_GTK:BOOL="0" -DWITH_SDL:BOOL="0"
+              cmake .. -DBUILD_SHARED_LIBS:BOOL="0" -DWITH_FFMPEG:BOOL="0" -DWITH_GTK:BOOL="0" -DWITH_SDL:BOOL="0" -DWITH_PNG:BOOL="1" -DWITH_JPEG:BOOL="1"
               cmake --build . -- -j$(nproc) 
+              ls
           - name: Upload Artifact - LibVNC
             uses: 'actions/upload-artifact@v2'
             with:
