@@ -35,7 +35,7 @@ jobs:
         ./scripts/grab_deps_linux.sh 
     - name: Make PNG build
       run: |
-          export CXXFLAGS="-static -static-libgcc -static-libstdc++"
+          export CCFLAGS="-static -static-libgcc -static-libstdc++"
           make -j$(nproc) JPEG=1
     - name: Upload Artifact - PNG
       uses: 'actions/upload-artifact@v2'
@@ -56,7 +56,7 @@ jobs:
         ./scripts/grab_deps_linux.sh 
     - name: Make JPEG build
       run: |
-          export CXXFLAGS="-static -static-libgcc -static-libstdc++"
+          export CCFLAGS="-static -static-libgcc -static-libstdc++"
           make -j$(nproc) JPEG=1
     - name: Upload Artifact - JPEG
       uses: 'actions/upload-artifact@v2'
