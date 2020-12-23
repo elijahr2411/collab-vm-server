@@ -34,12 +34,10 @@ jobs:
           - run: |
               sudo apt update
               sudo apt install cmake
-              ls libvncserver
               mkdir build
               cd build
               cmake ..
-              cmake --DBUILD_SHARED_LIBS=false
-              cmake --build . -- -j2
+              cmake --build . -- -j2 -DBUILD_SHARED_LIBS=OFF -DWITH_FFMPEG=OFF -DWITH_GTK=OFF -DWITH_SDL=OFF
           - name: Upload Artifact - LibVNC
             uses: 'actions/upload-artifact@v2'
             with:
