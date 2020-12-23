@@ -4,7 +4,7 @@
 CCFLAGS = -Isrc -Isrc/uriparser
 ifeq ($(STATIC),1)
 LIBS += -static -static-libgcc -Lcvmlib/lib
-CCFLAGS += Icvmlib/include
+CCFLAGS += -Icvmlib/include
 endif
 ifeq ($(DEBUG),1)
 # debug mode
