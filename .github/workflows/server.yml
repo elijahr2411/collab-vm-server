@@ -33,9 +33,10 @@ jobs:
       run: |
         sudo apt update
         ./scripts/grab_deps_linux.sh 
-        sudo apt install libvncserver-dev
-    - name: Make PNG build
-      run: make -j$(nproc) STATIC=1
+    - name: Make PNG build      
+      run: |
+        export CCFLAGS="-Xlinker --verbose "
+        make -j$(nproc) STATIC=1
     - name: Upload Artifact - PNG
       uses: 'actions/upload-artifact@v2'
       with:
@@ -53,9 +54,10 @@ jobs:
       run: |
         sudo apt update
         ./scripts/grab_deps_linux.sh 
-        sudo apt install libvncserver-dev
     - name: Make JPEG build
-      run: make -j$(nproc) STATIC=1 JPEG=1
+      run: |
+        export CCFLAGS="-Xlinker --verbose "
+        make -j$(nproc) STATIC=1 JPEG=1
     - name: Upload Artifact - JPEG
       uses: 'actions/upload-artifact@v2'
       with:
