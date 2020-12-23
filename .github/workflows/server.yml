@@ -53,6 +53,14 @@ jobs:
                 mkdir ./output/lib/pkgconfig
                 cp libvncclient.pc ./output/lib/pkgconfig/
                 cp libvncserver.pc ./output/lib/pkgconfig/
+          - name: Include other headers in ./include/rfb
+            run: |
+                cp ../rfb/keysym.h ./output/include/rfb
+                cp ../rfb/rfb.h ./output/include/rfb
+                cp ../rfb/rfbclient.h ./output/include/rfb
+                cp ../rfb/rfbproto.h ./output/include/rfb
+                cp ../rfb/rfbregion.h ./output/include/rfb
+                cp ../rfb/threading.h ./output/include/rfb
           - name: Upload Artifact - LibVNC
             uses: 'actions/upload-artifact@v2'
             with:
