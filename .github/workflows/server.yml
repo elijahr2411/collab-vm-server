@@ -33,7 +33,7 @@ jobs:
       run: |
         sudo apt update
         ./scripts/grab_deps_linux.sh 
-        sudo apt libvncserver-dev=0.9.11
+        sudo apt install libvncserver-dev=0.9.11
     - name: Make PNG build      
       run: |
         export LDINSERTS="-Xlinker --verbose "
@@ -55,7 +55,7 @@ jobs:
       run: |
         sudo apt update
         ./scripts/grab_deps_linux.sh 
-        sudo apt libvncserver-dev=0.9.11
+        sudo apt install libvncserver-dev=0.9.11
     - name: Make JPEG build
       run: |
         export LDINSERTS="-Xlinker --verbose "
