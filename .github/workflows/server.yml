@@ -31,15 +31,15 @@ jobs:
             with:
                 repository: LibVNC/libvncserver
                 submodules: recursive
-          - name: Install CMake, turbojpeg and libpng
+          - name: Install CMake, turbojpeg, libpng and liblzo2
             run: |
               sudo apt update
-              sudo apt install cmake libturbojpeg0-dev libpng-dev
+              sudo apt install cmake libturbojpeg0-dev libpng-dev liblzo2-dev
           - name: Compile Static LibVNC Binaries
             run: |
               mkdir build
               cd build
-              cmake .. -DBUILD_SHARED_LIBS:BOOL="0" -DWITH_FFMPEG:BOOL="0" -DWITH_GTK:BOOL="0" -DWITH_SDL:BOOL="0" -DWITH_PNG:BOOL="1" -DWITH_JPEG:BOOL="1"
+              cmake .. -DBUILD_SHARED_LIBS:BOOL="0" -DWITH_FFMPEG:BOOL="0" -DWITH_GTK:BOOL="0" -DWITH_SDL:BOOL="0" -DWITH_PNG:BOOL="1" -DWITH_JPEG:BOOL="1" -DWITH_LZO:BOOL="1"
               cmake --build . -- -j$(nproc) 
           - name: Prepare and create output directory
             run: |
