@@ -37,7 +37,7 @@ jobs:
               mkdir build
               cd build
               cmake ..
-              cmake --build . -- -j2 -DBUILD_SHARED_LIBS=OFF -DWITH_FFMPEG=OFF -DWITH_GTK=OFF -DWITH_SDL=OFF
+              cmake --build . -DBUILD_SHARED_LIBS=OFF -DWITH_FFMPEG=OFF -DWITH_GTK=OFF -DWITH_SDL=OFF -- -j2 
           - name: Upload Artifact - LibVNC
             uses: 'actions/upload-artifact@v2'
             with:
