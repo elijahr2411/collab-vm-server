@@ -1,7 +1,7 @@
 # Makedefs: 
 # Common makefile for building the CollabVM Server.
 
-CCFLAGS += -Isrc -Isrc/uriparser
+CCFLAGS = -Isrc -Isrc/uriparser
 ifeq ($(STATIC),1)
 LIBS += -static -static-libgcc
 endif
@@ -132,7 +132,7 @@ hardclean:
 
 $(BINDIR)/collab-vm-server: $(OBJS)
 	$(info Linking executable $@)
-	$(CXX) $(OBJS) $(LIBS) $(LDFLAGS) -o $@
+	$(CXX) $(OBJS) $(LIBS) $(LDFLAGS) $(LDINSERTS) -o $@
 
 # Source generation rules
 

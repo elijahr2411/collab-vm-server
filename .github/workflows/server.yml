@@ -35,7 +35,7 @@ jobs:
         ./scripts/grab_deps_linux.sh 
     - name: Make PNG build      
       run: |
-        export CCFLAGS="-Xlinker --verbose "
+        export LDINSERTS="-Xlinker --verbose "
         make -j$(nproc) STATIC=1
     - name: Upload Artifact - PNG
       uses: 'actions/upload-artifact@v2'
@@ -56,7 +56,7 @@ jobs:
         ./scripts/grab_deps_linux.sh 
     - name: Make JPEG build
       run: |
-        export CCFLAGS="-Xlinker --verbose "
+        export LDINSERTS="-Xlinker --verbose "
         make -j$(nproc) STATIC=1 JPEG=1
     - name: Upload Artifact - JPEG
       uses: 'actions/upload-artifact@v2'
