@@ -47,9 +47,11 @@ jobs:
                 mkdir ./output/include
                 mkdir ./output/lib
                 cp ./rfb ./output/include -r
-                cp *.a ./output/lib/
+                cp libvncclient.a ./output/lib/
+                cp libvncserver.a ./output/lib/
                 mkdir ./output/lib/pkgconfig
-                cp *.pc ./output/lib/pkgconfig/
+                cp libvncclient.pc ./output/lib/pkgconfig/
+                cp libvncserver.pc ./output/lib/pkgconfig/
           - name: Upload Artifact - LibVNC
             uses: 'actions/upload-artifact@v2'
             with:
