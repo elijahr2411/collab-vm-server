@@ -66,7 +66,6 @@ jobs:
           path: ./cvmlib/lib
     - name: Make PNG build      
       run: |
-        export LDINSERTS="-Xlinker --verbose "
         make -j$(nproc) STATIC=1
     - name: Upload Artifact - PNG
       uses: 'actions/upload-artifact@v2'
@@ -94,7 +93,6 @@ jobs:
           path: ./cvmlib/lib
     - name: Make JPEG build
       run: |
-        export LDINSERTS="-Xlinker --verbose "
         make -j$(nproc) STATIC=1 JPEG=1
     - name: Upload Artifact - JPEG
       uses: 'actions/upload-artifact@v2'
