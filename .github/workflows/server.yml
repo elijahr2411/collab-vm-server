@@ -40,7 +40,7 @@ jobs:
               mkdir build
               cd build
               cmake .. -DBUILD_SHARED_LIBS:BOOL="0" -DWITH_FFMPEG:BOOL="0" -DWITH_GTK:BOOL="0" -DWITH_SDL:BOOL="0"
-              cmake --build . -- -j2 
+              cmake --build . -- -j$(nproc) 
           - name: Upload Artifact - LibVNC
             uses: 'actions/upload-artifact@v2'
             with:
