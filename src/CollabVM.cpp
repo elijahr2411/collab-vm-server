@@ -2791,8 +2791,10 @@ void CollabVMServer::OnChatInstruction(const std::shared_ptr<CollabVMUser>& user
 		{
 			if (++user->ip_data.chat_msg_count >= database_.Configuration.ChatRateCount)
 			{
-				MuteUser(user, false);
-				return;
+				if (user->user_rank == kUnregistered || (user->user_rank == kModerator && !(database_.Configuration.ModPerms & 128))) {
+					MuteUser(user, false);
+					return;
+				}
 			}
 		}
 		else
