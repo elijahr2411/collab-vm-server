@@ -22,8 +22,31 @@ jobs:
       - run: echo "::set-output name=result::${CI_SKIP}"
         id: result_step
 
+  libvnc:
+      needs: check_skip
+      if: ${{ needs.check_skip.outputs.skip == 'false' }}
+      runs-on: ubuntu-20.04
+      steps:
+          - uses: actions/checkout@v2
+            with:
+                repository: LibVNC/libvncserver
+                submodules: recursive
+          - run: |
+              sudo apt update
+              sudo apt install cmake
+              cd libvncserver
+              mkdir build
+              cd build
+              cmake ..
+              cmake --DBUILD_SHARED_LIBS=false
+              cmake --build . -- -j2
+          - name: Upload Artifact - PNG
+            uses: 'actions/upload-artifact@v2'
+            with:
+                name: Server Binary - PNG
+                path: './build/*.a'
   build_png:
-    needs: check_skip
+    needs: [check_skip, libvnc]
     if: ${{ needs.check_skip.outputs.skip == 'false' }}
     runs-on: ubuntu-20.04
 
@@ -45,7 +68,7 @@ jobs:
         path: './bin/**/*'
   
   build_jpeg:
-    needs: check_skip
+    needs: [check_skip, libvnc]
     if: ${{ needs.check_skip.outputs.skip == 'false' }}
     runs-on: ubuntu-20.04
 
