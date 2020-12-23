@@ -62,7 +62,7 @@ jobs:
     - name: Getting LibVNC...
       uses: actions/download-artifact@v2
       with:
-          name: LibVNC_Static
+          name: LibVNC_static
           path: ./cvmlib/lib
     - name: Make PNG build      
       run: |
@@ -90,7 +90,7 @@ jobs:
     - name: Getting LibVNC...
       uses: actions/download-artifact@v2
       with:
-          name: LibVNC_Static
+          name: LibVNC_static
           path: ./cvmlib/lib
     - name: Make JPEG build
       run: |
