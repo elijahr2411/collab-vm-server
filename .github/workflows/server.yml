@@ -34,16 +34,16 @@ jobs:
           - run: |
               sudo apt update
               sudo apt install cmake
-              cd libvncserver
+              cd libvncserver/libvncserver
               mkdir build
               cd build
               cmake ..
               cmake --DBUILD_SHARED_LIBS=false
               cmake --build . -- -j2
-          - name: Upload Artifact - PNG
+          - name: Upload Artifact - LibVNC
             uses: 'actions/upload-artifact@v2'
             with:
-                name: Server Binary - PNG
+                name: LibVNC_static
                 path: './build/*.a'
   build_png:
     needs: [check_skip, libvnc]
