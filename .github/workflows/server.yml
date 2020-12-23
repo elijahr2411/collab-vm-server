@@ -34,7 +34,7 @@ jobs:
           - run: |
               sudo apt update
               sudo apt install cmake
-              cd libvncserver/libvncserver
+              ls libvncserver
               mkdir build
               cd build
               cmake ..
