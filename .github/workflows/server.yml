@@ -36,8 +36,8 @@ jobs:
               sudo apt install cmake
               mkdir build
               cd build
-              cmake ..
-              cmake --build . -DBUILD_SHARED_LIBS=OFF -DWITH_FFMPEG=OFF -DWITH_GTK=OFF -DWITH_SDL=OFF -- -j2 
+              cmake .. -DBUILD_SHARED_LIBS:BOOL="0" -DWITH_FFMPEG:BOOL="0" -DWITH_GTK:BOOL="0" -DWITH_SDL:BOOL="0"
+              cmake --build . -- -j2 
           - name: Upload Artifact - LibVNC
             uses: 'actions/upload-artifact@v2'
             with:
