@@ -41,12 +41,20 @@ jobs:
               cd build
               cmake .. -DBUILD_SHARED_LIBS:BOOL="0" -DWITH_FFMPEG:BOOL="0" -DWITH_GTK:BOOL="0" -DWITH_SDL:BOOL="0" -DWITH_PNG:BOOL="1" -DWITH_JPEG:BOOL="1"
               cmake --build . -- -j$(nproc) 
-              ls
+          - name: Prepare and create output directory
+            run: |
+                mkdir output
+                mkdir ./output/include
+                mkdir ./output/lib
+                cp ./rfb ./output/include -r
+                cp *.a ./output/lib/
+                mkdir ./output/lib/pkgconfig
+                cp *.pc ./output/lib/pkgconfig/
           - name: Upload Artifact - LibVNC
             uses: 'actions/upload-artifact@v2'
             with:
                 name: LibVNC_static
-                path: './build/*.a'
+                path: './build/output/*'
   build_png:
     needs: [check_skip, libvnc]
     if: ${{ needs.check_skip.outputs.skip == 'false' }}
@@ -59,12 +67,11 @@ jobs:
         sudo apt update
         ./scripts/grab_deps_linux.sh 
         mkdir cvmlib
-        mkdir ./cvmlib/lib
     - name: Getting LibVNC...
       uses: actions/download-artifact@v2
       with:
           name: LibVNC_static
-          path: ./cvmlib/lib
+          path: ./cvmlib
     - name: Make PNG build      
       run: |
         make -j$(nproc) STATIC=1
@@ -86,12 +93,11 @@ jobs:
         sudo apt update
         ./scripts/grab_deps_linux.sh 
         mkdir cvmlib
-        mkdir ./cvmlib/lib
     - name: Getting LibVNC...
       uses: actions/download-artifact@v2
       with:
           name: LibVNC_static
-          path: ./cvmlib/lib
+          path: ./cvmlib
     - name: Make JPEG build
       run: |
         make -j$(nproc) STATIC=1 JPEG=1
