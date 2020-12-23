@@ -77,6 +77,8 @@ jobs:
           path: ./cvmlib
     - name: Make PNG build      
       run: |
+        ls
+        ls cvmlib
         make -j$(nproc) STATIC=1
     - name: Upload Artifact - PNG
       uses: 'actions/upload-artifact@v2'
@@ -103,6 +105,8 @@ jobs:
           path: ./cvmlib
     - name: Make JPEG build
       run: |
+        ls
+        ls cvmlib
         make -j$(nproc) STATIC=1 JPEG=1
     - name: Upload Artifact - JPEG
       uses: 'actions/upload-artifact@v2'
