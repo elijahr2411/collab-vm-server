@@ -1,7 +1,7 @@
 # Makedefs: 
 # Common makefile for building the CollabVM Server.
 
-CCFLAGS = -Isrc -Isrc/uriparser
+CCFLAGS += -Isrc -Isrc/uriparser
 
 ifeq ($(DEBUG),1)
 # debug mode
