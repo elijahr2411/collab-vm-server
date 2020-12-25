@@ -42,7 +42,7 @@ build(){
 		log "Building on $UNAME_KERN $(uname -m).";
 	else
 		if [[ "$(uname -o)" == "Android" ]]; then
-			AND_VER=$(getprop|grep ro.build.version.release|cut -d[ -f3|cut -d] -f1)
+			AND_VER=$(getprop|grep "\[ro.build.version.release\]"|cut -d[ -f3|cut -d] -f1)
 			UNAME_KERN=$(printf "Android %s" $AND_VER)
 			log "Building on $UNAME_KERN $(uname -m)"
 		else
