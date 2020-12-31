@@ -339,7 +339,7 @@ void CollabVMServer::Run(uint16_t port, string doc_root)
 	server_.set_message_handler(bind(&CollabVMServer::OnMessageFromWS, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
 
 	server_.set_open_handshake_timeout(0);
-
+	server_.set_reuse_addr(true);
 	// Start WebSocket server listening on specified port
 	websocketpp::lib::error_code ec;
 	server_.listen(port, ec);
