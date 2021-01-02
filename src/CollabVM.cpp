@@ -1093,7 +1093,7 @@ void CollabVMServer::RemoveConnection(std::shared_ptr<CollabVMUser>& user)
 		for (auto it = connections_.begin(); it != connections_.end(); it++)
 		{
 			std::shared_ptr<CollabVMUser> user = *it;
-			SendWSMessage(*user, instr);
+			if (user->vm_controller) SendWSMessage(*user, instr);
 		}
 
 		user->username.reset();
