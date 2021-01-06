@@ -142,9 +142,10 @@ enum admin_opcodes_ {
 	kBanUser,		// Ban user's IP address
 	kCancelVote,	// Cancel a Vote for Reset without resetting
 	kMuteUser,		// Mute a user
-	kForceRemoveUser,		// Forcefully Remove a user from a VM (Kick)
+	kForceRemoveUser, // Forcefully Remove a user from a VM (Kick)
 	kEndUserTurn, // End a user's turn
-	kEndTurnQueue	
+	kEndTurnQueue, // End all turns
+	kRenameUser // Rename a user
 };
 
 enum SERVER_SETTINGS
@@ -2381,6 +2382,8 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		&& (opcode != kForceRemoveUser || !(database_.Configuration.ModPerms & 32))
 		&& (opcode != kEndUserTurn || !(database_.Configuration.ModPerms & 64))
 		&& (opcode != kEndTurnQueue || !(database_.Configuration.ModPerms & 64))
+		// 128 took by noantispam
+		&& (opcode != kRenameUser || !(database_.Configuration.ModPerms & 256))
 		) return;
 
 	switch (opcode)
@@ -2703,6 +2706,32 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 	      };
 	      if (it->second->CurrentTurn()) it->second->EndTurn(it->second->CurrentTurn());
 	    };
+	  };
+	  break;
+	case kRenameUser:
+	  if (args.size() == 2 || args.size() == 3) {
+		for (auto it = connections_.begin(); it != connections_.end(); it++) {
+		  std::shared_ptr<CollabVMUser> changeNameUser = *it;
+		  UsernameChangeResult cnResult = UsernameChangeResult::kSuccess;
+		  if (!changeNameUser->username) continue;
+		  if (*changeNameUser->username == args[1]) {
+			if (args.size() == 2) {
+			  ChangeUsername(changeNameUser, GenerateUsername(), cnResult, 0);
+			} else {
+			  if (usernames_.find(args[2]) != usernames_.end()) cnResult = UsernameChangeResult::kUsernameTaken;
+			  else if (ValidateUsername(args[2])) {
+				ChangeUsername(changeNameUser, args[2], cnResult, 0);
+			  } else {
+				cnResult = UsernameChangeResult::kInvalid;
+			  };
+			};
+			std::string instr = "5.admin,2.18,1.";
+			instr += cnResult;
+			instr += ";";
+			SendWSMessage(*user, instr);
+			break;
+		  };
+		};
 	  };
 	  break;
 	}
@@ -4333,7 +4362,7 @@ void CollabVMServer::ParseServerSettings(rapidjson::Value& settings, rapidjson::
 				case kModPerms:
 					if (value.IsUint())
 					{
-						if (value.GetUint() <= std::numeric_limits<uint8_t>::max())
+						if (value.GetUint() <= std::numeric_limits<uint16_t>::max())
 						{
 							config.ModPerms = value.GetUint();
 						}
