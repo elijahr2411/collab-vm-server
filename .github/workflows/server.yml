@@ -86,7 +86,7 @@ jobs:
 #          path: ./cvmlib
     - name: Make PNG build      
       run: |
-        make -j$(nproc)
+        make -j$(nproc) NO_NATIVE=1
     - name: Upload Artifact - PNG
       uses: 'actions/upload-artifact@v2'
       with:
@@ -113,7 +113,7 @@ jobs:
 #          path: ./cvmlib
     - name: Make JPEG build
       run: |
-        make -j$(nproc) JPEG=1
+        make -j$(nproc) JPEG=1 NO_NATIVE=1
     - name: Upload Artifact - JPEG
       uses: 'actions/upload-artifact@v2'
       with:
