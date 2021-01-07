@@ -99,6 +99,7 @@ void VMController::Vote(CollabVMUser& user, bool vote)
 		case VoteState::kCoolingdown:
 		{
 			int32_t time_remaining = std::chrono::duration_cast<std::chrono::duration<int32_t>>(vote_timer_.expires_from_now()).count();
+			// Earlier I was attempting to get staff to bypass this but this will need more work, come back to it later
 			if (time_remaining > 0)
 			{
 				server_.VoteCoolingDown(user, time_remaining);
@@ -130,8 +131,7 @@ void VMController::Vote(CollabVMUser& user, bool vote)
 			{
 				IPData::VoteDecision prev_vote = user.ip_data.votes[this];
 				bool changed = false;
-				if(user.voted_limit == false) {
-
+				if (user.voted_limit == false) {
 					if(user.voted_amount >= 5) {
 						user.voted_limit = true;
 						goto _vote_limit_die;

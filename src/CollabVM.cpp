@@ -140,7 +140,7 @@ enum admin_opcodes_ {
 	kResetVM,		// Reset one or more VMs
 	kRestartVM,		// Restart one or more VM hypervisors
 	kBanUser,		// Ban user's IP address
-	kCancelVote,	// Cancel a Vote for Reset without resetting
+	kForceVote,	// Force the results of the Vote for Reset
 	kMuteUser,		// Mute a user
 	kForceRemoveUser, // Forcefully Remove a user from a VM (Kick)
 	kEndUserTurn, // End a user's turn
@@ -2377,12 +2377,12 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		&& (opcode != kRestoreVM || !(database_.Configuration.ModPerms & 1))
 		&& (opcode != kResetVM || !(database_.Configuration.ModPerms & 2))
 		&& (opcode != kBanUser || !(database_.Configuration.ModPerms & 4))
-		&& (opcode != kCancelVote || !(database_.Configuration.ModPerms & 8))
+		&& (opcode != kForceVote || !(database_.Configuration.ModPerms & 8))
 		&& (opcode != kMuteUser || !(database_.Configuration.ModPerms & 16))
 		&& (opcode != kForceRemoveUser || !(database_.Configuration.ModPerms & 32))
 		&& (opcode != kEndUserTurn || !(database_.Configuration.ModPerms & 64))
 		&& (opcode != kEndTurnQueue || !(database_.Configuration.ModPerms & 64))
-		// 128 took by noantispam
+		// 128 took by noratelimits
 		&& (opcode != kRenameUser || !(database_.Configuration.ModPerms & 256))
 		) return;
 
@@ -2647,10 +2647,12 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 				}
 			}
 		break;
-	case kCancelVote:
-		if (args.size() == 1 && user->vm_controller != nullptr)
-			user->vm_controller->EndVote(true);
-		break;
+	case kForceVote:
+	  if (user->vm_controller != nullptr) {
+		if (args.size() == 1 || (args.size() == 2 && args[1][0] == '0')) user->vm_controller->EndVote(true);
+		else if ((args.size() == 2 && args[1][0] == '1') && database_.Configuration.ModPerms & 1) user->vm_controller->EndVote(false);
+	  };
+	  break;
 	case kMuteUser:
 		if (args.size() == 3)
 			for (auto it = connections_.begin(); it != connections_.end(); it++)
