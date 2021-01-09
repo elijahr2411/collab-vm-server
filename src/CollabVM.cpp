@@ -2688,7 +2688,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		};
         break;
 	case kEndUserTurn:
-	  if (args.size() == 2) {
+	  if (args.size() == 2 && user->vm_controller != nullptr) {
 	    for (auto it = connections_.begin(); it != connections_.end(); it++) {
 	      std::shared_ptr<CollabVMUser> endTurnUser = *it;
 	      if (!endTurnUser->username) continue;
