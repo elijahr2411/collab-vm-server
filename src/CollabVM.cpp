@@ -145,7 +145,8 @@ enum admin_opcodes_ {
 	kForceRemoveUser, // Forcefully Remove a user from a VM (Kick)
 	kEndUserTurn, // End a user's turn
 	kEndTurnQueue, // End all turns
-	kRenameUser // Rename a user
+	kRenameUser, // Rename a user
+	kUserIP // Sends back a user's IP address
 };
 
 enum SERVER_SETTINGS
@@ -2383,6 +2384,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		&& (opcode != kEndUserTurn || !(database_.Configuration.ModPerms & 64))
 		&& (opcode != kEndTurnQueue || !(database_.Configuration.ModPerms & 64))
 		&& (opcode != kRenameUser || !(database_.Configuration.ModPerms & 128))
+		&& (opcode != kUserIP || !(database_.Configuration.ModPerms & 256))
 		) return;
 
 	switch (opcode)
@@ -2731,6 +2733,26 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 			instr += ";";
 			SendWSMessage(*user, instr);
 			break;
+		  };
+		};
+	  };
+	  break;
+	case kUserIP:
+	  if (args.size() == 2) {
+		for (auto it = connections_.begin(); it != connections_.end(); it++) {
+		  std::shared_ptr<CollabVMUser> theUser = *it;
+		  if (!theUser->username) continue;
+		  if (*theUser->username == args[1]) {
+			std::string instr = "5.admin,2.19,";
+			instr += std::to_string(theUser->username->length());
+			instr += ".";
+			instr += *theUser->username;
+			instr += ",";
+			instr += std::to_string(theUser->ip_data.GetIP().length());
+			instr += ".";
+			instr += theUser->ip_data.GetIP();
+			instr += ";";
+			SendWSMessage(*user, instr);			
 		  };
 		};
 	  };
