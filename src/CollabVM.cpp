@@ -2382,8 +2382,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		&& (opcode != kForceRemoveUser || !(database_.Configuration.ModPerms & 32))
 		&& (opcode != kEndUserTurn || !(database_.Configuration.ModPerms & 64))
 		&& (opcode != kEndTurnQueue || !(database_.Configuration.ModPerms & 64))
-		// 128 took by noratelimits
-		&& (opcode != kRenameUser || !(database_.Configuration.ModPerms & 256))
+		&& (opcode != kRenameUser || !(database_.Configuration.ModPerms & 128))
 		) return;
 
 	switch (opcode)
@@ -2820,7 +2819,7 @@ void CollabVMServer::OnChatInstruction(const std::shared_ptr<CollabVMUser>& user
 		{
 			if (++user->ip_data.chat_msg_count >= database_.Configuration.ChatRateCount)
 			{
-				if (user->user_rank == kUnregistered || (user->user_rank == kModerator && !(database_.Configuration.ModPerms & 128))) {
+				if (user->user_rank == kUnregistered || (user->user_rank == kModerator && !(database_.Configuration.ModPerms & 16))) {
 					MuteUser(user, false);
 					return;
 				}
