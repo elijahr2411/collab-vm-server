@@ -142,11 +142,12 @@ enum admin_opcodes_ {
 	kBanUser,		// Ban user's IP address
 	kForceVote,	// Force the results of the Vote for Reset
 	kMuteUser,		// Mute a user
-	kForceRemoveUser, // Forcefully Remove a user from a VM (Kick)
+	kKickUser, // Forcefully remove a user from a VM (Kick)
 	kEndUserTurn, // End a user's turn
-	kEndTurnQueue, // End all turns
+	kClearTurnQueue, // End all turns
 	kRenameUser, // Rename a user
-	kUserIP // Sends back a user's IP address
+	kUserIP, // Sends back a user's IP address
+	kForceTakeTurn // Skip the queue and forcefully take a turn (Turn-jacking)
 };
 
 enum SERVER_SETTINGS
@@ -2380,9 +2381,10 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		&& (opcode != kBanUser || !(database_.Configuration.ModPerms & 4))
 		&& (opcode != kForceVote || !(database_.Configuration.ModPerms & 8))
 		&& (opcode != kMuteUser || !(database_.Configuration.ModPerms & 16))
-		&& (opcode != kForceRemoveUser || !(database_.Configuration.ModPerms & 32))
+		&& (opcode != kKickUser || !(database_.Configuration.ModPerms & 32))
 		&& (opcode != kEndUserTurn || !(database_.Configuration.ModPerms & 64))
-		&& (opcode != kEndTurnQueue || !(database_.Configuration.ModPerms & 64))
+		&& (opcode != kClearTurnQueue || !(database_.Configuration.ModPerms & 64))
+		&& (opcode != kForceTakeTurn || !(database_.Configuration.ModPerms & 64))
 		&& (opcode != kRenameUser || !(database_.Configuration.ModPerms & 128))
 		&& (opcode != kUserIP || !(database_.Configuration.ModPerms & 256))
 		) return;
@@ -2670,7 +2672,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 				}
 			}
 		break;
-    case kForceRemoveUser:
+    case kKickUser:
         if (args.size() == 2) {
             for (auto it = connections_.begin(); it != connections_.end(); it++)
             {
@@ -2689,72 +2691,77 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		};
         break;
 	case kEndUserTurn:
-	  if (args.size() == 2 && user->vm_controller != nullptr) {
-	    for (auto it = connections_.begin(); it != connections_.end(); it++) {
-	      std::shared_ptr<CollabVMUser> endTurnUser = *it;
-	      if (!endTurnUser->username) continue;
-	      if (*endTurnUser->username == args[1]) {
-		user->vm_controller->EndTurn(endTurnUser);
-		break;
-	      };
-	    };
-	  };
-	  break;
-	case kEndTurnQueue:
-	  if (args.size() == 2) {
-	    auto it = vm_controllers_.find(args[1]);
-	    if (it != vm_controllers_.end()) {
-		it->second->ClearTurnQueue();
-	    };
-	  };
-	  break;
-	case kRenameUser:
-	  if (args.size() == 2 || args.size() == 3) {
-		for (auto it = connections_.begin(); it != connections_.end(); it++) {
-		  std::shared_ptr<CollabVMUser> changeNameUser = *it;
-		  UsernameChangeResult cnResult = UsernameChangeResult::kSuccess;
-		  if (!changeNameUser->username) continue;
-		  if (*changeNameUser->username == args[1]) {
-			if (args.size() == 2) {
-			  ChangeUsername(changeNameUser, GenerateUsername(), cnResult, 0);
-			} else {
-			  if (usernames_.find(args[2]) != usernames_.end()) cnResult = UsernameChangeResult::kUsernameTaken;
-			  else if (ValidateUsername(args[2])) {
-				ChangeUsername(changeNameUser, args[2], cnResult, 0);
-			  } else {
-				cnResult = UsernameChangeResult::kInvalid;
-			  };
+		if (args.size() == 2 && user->vm_controller != nullptr) {
+			for (auto it = connections_.begin(); it != connections_.end(); it++) {
+				std::shared_ptr<CollabVMUser> endTurnUser = *it;
+				if (!endTurnUser->username) continue;
+				if (*endTurnUser->username == args[1]) {
+					user->vm_controller->EndTurn(endTurnUser);
+					break;
+				};
 			};
-			std::string instr = "5.admin,2.18,1.";
-			instr += cnResult;
-			instr += ";";
-			SendWSMessage(*user, instr);
-			break;
-		  };
 		};
-	  };
-	  break;
+		break;
+	case kClearTurnQueue:
+		if (args.size() == 2) {
+			auto it = vm_controllers_.find(args[1]);
+			if (it != vm_controllers_.end()) {
+				it->second->ClearTurnQueue();
+			};
+		};
+		break;
+	case kRenameUser:
+		if (args.size() == 2 || args.size() == 3) {
+			for (auto it = connections_.begin(); it != connections_.end(); it++) {
+				std::shared_ptr<CollabVMUser> changeNameUser = *it;
+				UsernameChangeResult cnResult = UsernameChangeResult::kSuccess;
+				if (!changeNameUser->username) continue;
+				if (*changeNameUser->username == args[1]) {
+					if (args.size() == 2) {
+						ChangeUsername(changeNameUser, GenerateUsername(), cnResult, 0);
+					} else {
+						if (usernames_.find(args[2]) != usernames_.end()) cnResult = UsernameChangeResult::kUsernameTaken;
+						else if (ValidateUsername(args[2])) {
+							ChangeUsername(changeNameUser, args[2], cnResult, 0);
+						} else {
+							cnResult = UsernameChangeResult::kInvalid;
+						};
+					};
+					std::string instr = "5.admin,2.18,1.";
+					instr += cnResult;
+					instr += ";";
+					SendWSMessage(*user, instr);
+					break;
+				};
+			};
+		};
+		break;
 	case kUserIP:
-	  if (args.size() == 2) {
-		for (auto it = connections_.begin(); it != connections_.end(); it++) {
-		  std::shared_ptr<CollabVMUser> theUser = *it;
-		  if (!theUser->username) continue;
-		  if (*theUser->username == args[1]) {
-			std::string instr = "5.admin,2.19,";
-			instr += std::to_string(theUser->username->length());
-			instr += ".";
-			instr += *theUser->username;
-			instr += ",";
-			instr += std::to_string(theUser->ip_data.GetIP().length());
-			instr += ".";
-			instr += theUser->ip_data.GetIP();
-			instr += ";";
-			SendWSMessage(*user, instr);
-			break;
-		  };
+		if (args.size() == 2) {
+			for (auto it = connections_.begin(); it != connections_.end(); it++) {
+				std::shared_ptr<CollabVMUser> theUser = *it;
+				if (!theUser->username) continue;
+				if (*theUser->username == args[1]) {
+					std::string instr = "5.admin,2.19,";
+					instr += std::to_string(theUser->username->length());
+					instr += ".";
+					instr += *theUser->username;
+					instr += ",";
+					instr += std::to_string(theUser->ip_data.GetIP().length());
+					instr += ".";
+					instr += theUser->ip_data.GetIP();
+					instr += ";";
+					SendWSMessage(*user, instr);
+					break;
+				};
+			};
 		};
-	  };
-	  break;
+		break;
+	case kForceTakeTurn:
+		if (user->vm_controller != nullptr && user->username) {
+			user->vm_controller->TurnRequest(user, 1, 1);
+		};
+		break;
 	}
 }
 
@@ -2912,7 +2919,7 @@ void CollabVMServer::OnTurnInstruction(const std::shared_ptr<CollabVMUser>& user
 		if (args.size() == 1 && args[0][0] == '0')
 			user->vm_controller->EndTurn(user);
 		else
-			user->vm_controller->TurnRequest(user);
+			user->vm_controller->TurnRequest(user, 0, user->user_rank == UserRank::kAdmin || (user->user_rank == UserRank::kModerator && database_.Configuration.ModPerms & 64));
 	}
 }
 
