@@ -2704,10 +2704,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 	  if (args.size() == 2) {
 	    auto it = vm_controllers_.find(args[1]);
 	    if (it != vm_controllers_.end()) {
-	      for (std::shared_ptr<CollabVMUser> endThisTurn : it->second->GetTurnQueue()) {
-		it->second->EndTurn(endThisTurn);
-	      };
-	      if (it->second->CurrentTurn()) it->second->EndTurn(it->second->CurrentTurn());
+		it->second->ClearTurnQueue();
 	    };
 	  };
 	  break;
