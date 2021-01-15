@@ -2752,7 +2752,8 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 			instr += ".";
 			instr += theUser->ip_data.GetIP();
 			instr += ";";
-			SendWSMessage(*user, instr);			
+			SendWSMessage(*user, instr);
+			break;
 		  };
 		};
 	  };
