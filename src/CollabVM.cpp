@@ -2097,7 +2097,9 @@ void CollabVMServer::ExecuteCommandAsync(std::string command)
 	// so it is called in a new thread
 	std::string command_ = command;
 	std::thread([command_] {
-		std::system(command_.c_str());
+		if (std::system(command_.c_str())) {
+			std::cout << "An error occurred while executing: " << command_ << std::endl;
+		};
 	}).detach();
 }
 
