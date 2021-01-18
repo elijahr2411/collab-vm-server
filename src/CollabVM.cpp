@@ -165,6 +165,8 @@ enum SERVER_SETTINGS
 	kBlacklistedNames
 };
 
+std::vector<std::string> blacklisted_usernames_;
+
 static const std::string server_settings_[] = {
 	"chat-rate-count",
 	"chat-rate-time",
@@ -346,6 +348,11 @@ void CollabVMServer::Run(uint16_t port, string doc_root)
 
 	server_.set_open_handshake_timeout(0);
 	server_.set_reuse_addr(true);
+
+	// Put blacklisted usernames into runtime array
+	boost::split(blacklisted_usernames_, database_.Configuration.BlacklistedNames, boost::is_any_of(";"));
+
+
 	// Start WebSocket server listening on specified port
 	websocketpp::lib::error_code ec;
 	server_.listen(port, ec);
@@ -2248,18 +2255,32 @@ void CollabVMServer::OnRenameInstruction(const std::shared_ptr<CollabVMUser>& us
 	else
 	{
 		// Check if the username is blacklisted
-		// This is probably horribly inefficient
-		std::vector<std::string> fields;
-		boost::split(fields, database_.Configuration.BlacklistedNames, boost::is_any_of(";"));
-
-		if (std::find(fields.begin(), fields.end(), username) != fields.end())
+		if (std::find(blacklisted_usernames_.begin(), blacklisted_usernames_.end(), username) != blacklisted_usernames_.end())
 		{
 			// The requested username is blacklisted
-			// so let's just hand them their old username back
 			result = UsernameChangeResult::kBlacklisted;
-			ChangeUsername(user, user->username->c_str(), result, args.size() > 1);
+			std::string instr;
+			instr = "6.rename,1.0,1.3,";
+			if(!user->username) {
+				instr += "0.,";
+			}
+			else
+			{
+				instr += std::to_string(user->username->length());
+				instr += '.';
+				instr += *user->username;
+				instr += ',';
+			}
+			std::string rank = std::to_string(user->user_rank);
+			instr += std::to_string(rank.length());
+			instr += '.';
+			instr += rank;
+			instr += ';';
+			SendWSMessage(*user, instr);
 			return;
-		}else{
+		}
+		else
+		{
 			// The requested username is valid and available
 			ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
 		}
@@ -4432,6 +4453,9 @@ void CollabVMServer::ParseServerSettings(rapidjson::Value& settings, rapidjson::
 					if (value.IsString())
 					{
 						config.BlacklistedNames = string(value.GetString(), value.GetStringLength());
+						// Refresh runtime list of blacklisted usernames
+						blacklisted_usernames_.clear();
+						boost::split(blacklisted_usernames_, database_.Configuration.BlacklistedNames, boost::is_any_of(";"));
 					}
 					else
 					{
