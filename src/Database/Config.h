@@ -105,5 +105,5 @@ struct Config
 	//FileMode FileUploadMode;
 	//std::string BlackList;
 	//std::string WhiteList;
-
+	std::string BlacklistedNames;
 };

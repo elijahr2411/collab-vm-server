@@ -658,7 +658,8 @@ private:
 	{
 		kSuccess = '0',			// The username was successfully changed
 		kUsernameTaken = '1',	// Someone already has the username or it is registered to an account
-		kInvalid = '2'			// The requested username had invalid characters
+		kInvalid = '2',			// The requested username had invalid characters
+		kBlacklisted = '3'
 	};
 
 	/**

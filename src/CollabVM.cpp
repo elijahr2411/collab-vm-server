@@ -13,6 +13,7 @@ Colonel Seizureton/Colonel Munchkin
 CtrlAltDel
 FluffyVulpix
 sorry/unk0rrupt
+MDMCK10
 modeco80
 hannah
 DarkOK
@@ -42,6 +43,7 @@ Please email rightowner@gmail.com for any assistance.
 #include <fstream>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/algorithm/string.hpp>
 
 #ifdef _WIN32
 #include <sys/types.h>
@@ -160,8 +162,11 @@ enum SERVER_SETTINGS
 	kBanCommand,
 	kJPEGQuality,
 	kModEnabled,
-	kModPerms
+	kModPerms,
+	kBlacklistedNames
 };
+
+std::vector<std::string> blacklisted_usernames_;
 
 static const std::string server_settings_[] = {
 	"chat-rate-count",
@@ -172,7 +177,8 @@ static const std::string server_settings_[] = {
 	"ban-cmd",
 	"jpeg-quality",
 	"mod-enabled",
-	"mod-perms"
+	"mod-perms",
+	"blacklisted-usernames"
 };
 
 enum VM_SETTINGS
@@ -343,6 +349,11 @@ void CollabVMServer::Run(uint16_t port, string doc_root)
 
 	server_.set_open_handshake_timeout(0);
 	server_.set_reuse_addr(true);
+
+	// Put blacklisted usernames into runtime array
+	boost::split(blacklisted_usernames_, database_.Configuration.BlacklistedNames, boost::is_any_of(";"));
+
+
 	// Start WebSocket server listening on specified port
 	websocketpp::lib::error_code ec;
 	server_.listen(port, ec);
@@ -2244,8 +2255,38 @@ void CollabVMServer::OnRenameInstruction(const std::shared_ptr<CollabVMUser>& us
 	}
 	else
 	{
-		// The requested username is valid and available
-		ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
+		// Check if the username is blacklisted
+		if (std::find(blacklisted_usernames_.begin(), blacklisted_usernames_.end(), username) != blacklisted_usernames_.end()
+		    && user->user_rank != UserRank::kModerator
+		    && user->user_rank != UserRank::kAdmin)
+		{
+			// The requested username is blacklisted
+			result = UsernameChangeResult::kBlacklisted;
+			std::string instr;
+			instr = "6.rename,1.0,1.3,";
+			if(!user->username) {
+				instr += "0.,";
+			}
+			else
+			{
+				instr += std::to_string(user->username->length());
+				instr += '.';
+				instr += *user->username;
+				instr += ',';
+			}
+			std::string rank = std::to_string(user->user_rank);
+			instr += std::to_string(rank.length());
+			instr += '.';
+			instr += rank;
+			instr += ';';
+			SendWSMessage(*user, instr);
+			return;
+		}
+		else
+		{
+			// The requested username is valid and available
+			ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
+		}
 		return;
 	}
 
@@ -4408,6 +4449,20 @@ void CollabVMServer::ParseServerSettings(rapidjson::Value& settings, rapidjson::
 					else
 					{
 						WriteJSONObject(writer, server_settings_[kModPerms], invalid_object_);
+						valid = false;
+					}
+					break;
+				case kBlacklistedNames:
+					if (value.IsString())
+					{
+						config.BlacklistedNames = string(value.GetString(), value.GetStringLength());
+						// Refresh runtime list of blacklisted usernames
+						blacklisted_usernames_.clear();
+						boost::split(blacklisted_usernames_, database_.Configuration.BlacklistedNames, boost::is_any_of(";"));
+					}
+					else
+					{
+						WriteJSONObject(writer, server_settings_[kBlacklistedNames], invalid_object_);
 						valid = false;
 					}
 					break;
