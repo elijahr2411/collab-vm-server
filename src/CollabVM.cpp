@@ -7,15 +7,19 @@ Geodude
 
 Special Thanks:
 
+6969
 CHOCOLATEMAN
 Colonel Seizureton/Colonel Munchkin
 CtrlAltDel
 FluffyVulpix
+sorry/unk0rrupt
 modeco80
 hannah
+DarkOK
 LoveEevee
 Matthew
 Vanilla
+yellows111
 and the rest of the Collab VM Community for all their help over the years,
 including, but of course not limited to:
 Donating, using the site, telling their friends/family, being a great help, and more.
@@ -136,8 +140,14 @@ enum admin_opcodes_ {
 	kResetVM,		// Reset one or more VMs
 	kRestartVM,		// Restart one or more VM hypervisors
 	kBanUser,		// Ban user's IP address
-	kCancelVote,	// Cancel a Vote for Reset without resetting
-	kMuteUser		// Mute a user
+	kForceVote,	// Force the results of the Vote for Reset
+	kMuteUser,		// Mute a user
+	kKickUser, // Forcefully remove a user from a VM (Kick)
+	kEndUserTurn, // End a user's turn
+	kClearTurnQueue, // End all turns
+	kRenameUser, // Rename a user
+	kUserIP, // Sends back a user's IP address
+	kForceTakeTurn // Skip the queue and forcefully take a turn (Turn-jacking)
 };
 
 enum SERVER_SETTINGS
@@ -332,7 +342,7 @@ void CollabVMServer::Run(uint16_t port, string doc_root)
 	server_.set_message_handler(bind(&CollabVMServer::OnMessageFromWS, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
 
 	server_.set_open_handshake_timeout(0);
-
+	server_.set_reuse_addr(true);
 	// Start WebSocket server listening on specified port
 	websocketpp::lib::error_code ec;
 	server_.listen(port, ec);
@@ -1086,7 +1096,7 @@ void CollabVMServer::RemoveConnection(std::shared_ptr<CollabVMUser>& user)
 		for (auto it = connections_.begin(); it != connections_.end(); it++)
 		{
 			std::shared_ptr<CollabVMUser> user = *it;
-			SendWSMessage(*user, instr);
+			if (user->vm_controller) SendWSMessage(*user, instr);
 		}
 
 		user->username.reset();
@@ -2087,7 +2097,9 @@ void CollabVMServer::ExecuteCommandAsync(std::string command)
 	// so it is called in a new thread
 	std::string command_ = command;
 	std::thread([command_] {
-		std::system(command_.c_str());
+		if (std::system(command_.c_str())) {
+			std::cout << "An error occurred while executing: " << command_ << std::endl;
+		};
 	}).detach();
 }
 
@@ -2369,8 +2381,14 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		&& (opcode != kRestoreVM || !(database_.Configuration.ModPerms & 1))
 		&& (opcode != kResetVM || !(database_.Configuration.ModPerms & 2))
 		&& (opcode != kBanUser || !(database_.Configuration.ModPerms & 4))
-		&& (opcode != kCancelVote || !(database_.Configuration.ModPerms & 8))
+		&& (opcode != kForceVote || !(database_.Configuration.ModPerms & 8))
 		&& (opcode != kMuteUser || !(database_.Configuration.ModPerms & 16))
+		&& (opcode != kKickUser || !(database_.Configuration.ModPerms & 32))
+		&& (opcode != kEndUserTurn || !(database_.Configuration.ModPerms & 64))
+		&& (opcode != kClearTurnQueue || !(database_.Configuration.ModPerms & 64))
+		&& (opcode != kForceTakeTurn || !(database_.Configuration.ModPerms & 64))
+		&& (opcode != kRenameUser || !(database_.Configuration.ModPerms & 128))
+		&& (opcode != kUserIP || !(database_.Configuration.ModPerms & 256))
 		) return;
 
 	switch (opcode)
@@ -2621,6 +2639,8 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 					std::string banCmd = database_.Configuration.BanCommand;
 					for (size_t it = 0; banCmd.find("$IP",it) != std::string::npos; it = banCmd.find("$IP",it))
 						banCmd.replace(banCmd.find("$IP",it),3,banUser->ip_data.GetIP());
+					for (size_t it = 0; banCmd.find("$NAME",it) != std::string::npos; it = banCmd.find("$NAME",it))
+						banCmd.replace(banCmd.find("$NAME",it),5,*banUser->username);
 					// Block user's IP
 					ExecuteCommandAsync(banCmd);
 					// Disconnect user
@@ -2632,10 +2652,12 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 				}
 			}
 		break;
-	case kCancelVote:
-		if (args.size() == 1 && user->vm_controller != nullptr)
-			user->vm_controller->EndVote(true);
-		break;
+	case kForceVote:
+	  if (user->vm_controller != nullptr) {
+		if (args.size() == 1 || (args.size() == 2 && args[1][0] == '0')) user->vm_controller->EndVote(true);
+		else if ((args.size() == 2 && args[1][0] == '1') && database_.Configuration.ModPerms & 1) user->vm_controller->EndVote(false);
+	  };
+	  break;
 	case kMuteUser:
 		if (args.size() == 3)
 			for (auto it = connections_.begin(); it != connections_.end(); it++)
@@ -2651,6 +2673,96 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 					break;
 				}
 			}
+		break;
+    case kKickUser:
+        if (args.size() == 2) {
+            for (auto it = connections_.begin(); it != connections_.end(); it++)
+            {
+                std::shared_ptr<CollabVMUser> kickUser = *it;
+                if (!kickUser->username) continue;
+                if (*kickUser->username == args[1])
+                {
+                    // Disconnect user
+                    unique_lock<std::mutex> lock(process_queue_lock_);
+                    process_queue_.push(new UserAction(*kickUser, ActionType::kRemoveConnection));
+                    lock.unlock();
+                    process_wait_.notify_one();
+                    break;
+                };
+            };
+		};
+        break;
+	case kEndUserTurn:
+		if (args.size() == 2 && user->vm_controller != nullptr) {
+			for (auto it = connections_.begin(); it != connections_.end(); it++) {
+				std::shared_ptr<CollabVMUser> endTurnUser = *it;
+				if (!endTurnUser->username) continue;
+				if (*endTurnUser->username == args[1]) {
+					user->vm_controller->EndTurn(endTurnUser);
+					break;
+				};
+			};
+		};
+		break;
+	case kClearTurnQueue:
+		if (args.size() == 2) {
+			auto it = vm_controllers_.find(args[1]);
+			if (it != vm_controllers_.end()) {
+				it->second->ClearTurnQueue();
+			};
+		};
+		break;
+	case kRenameUser:
+		if (args.size() == 2 || args.size() == 3) {
+			for (auto it = connections_.begin(); it != connections_.end(); it++) {
+				std::shared_ptr<CollabVMUser> changeNameUser = *it;
+				UsernameChangeResult cnResult = UsernameChangeResult::kSuccess;
+				if (!changeNameUser->username) continue;
+				if (*changeNameUser->username == args[1]) {
+					if (args.size() == 2) {
+						ChangeUsername(changeNameUser, GenerateUsername(), cnResult, 0);
+					} else {
+						if (usernames_.find(args[2]) != usernames_.end()) cnResult = UsernameChangeResult::kUsernameTaken;
+						else if (ValidateUsername(args[2])) {
+							ChangeUsername(changeNameUser, args[2], cnResult, 0);
+						} else {
+							cnResult = UsernameChangeResult::kInvalid;
+						};
+					};
+					std::string instr = "5.admin,2.18,1.";
+					instr += cnResult;
+					instr += ";";
+					SendWSMessage(*user, instr);
+					break;
+				};
+			};
+		};
+		break;
+	case kUserIP:
+		if (args.size() == 2) {
+			for (auto it = connections_.begin(); it != connections_.end(); it++) {
+				std::shared_ptr<CollabVMUser> theUser = *it;
+				if (!theUser->username) continue;
+				if (*theUser->username == args[1]) {
+					std::string instr = "5.admin,2.19,";
+					instr += std::to_string(theUser->username->length());
+					instr += ".";
+					instr += *theUser->username;
+					instr += ",";
+					instr += std::to_string(theUser->ip_data.GetIP().length());
+					instr += ".";
+					instr += theUser->ip_data.GetIP();
+					instr += ";";
+					SendWSMessage(*user, instr);
+					break;
+				};
+			};
+		};
+		break;
+	case kForceTakeTurn:
+		if (user->vm_controller != nullptr && user->username) {
+			user->vm_controller->TurnRequest(user, 1, 1);
+		};
 		break;
 	}
 }
@@ -2736,8 +2848,10 @@ void CollabVMServer::OnChatInstruction(const std::shared_ptr<CollabVMUser>& user
 		{
 			if (++user->ip_data.chat_msg_count >= database_.Configuration.ChatRateCount)
 			{
-				MuteUser(user, false);
-				return;
+				if (user->user_rank == kUnregistered || (user->user_rank == kModerator && !(database_.Configuration.ModPerms & 16))) {
+					MuteUser(user, false);
+					return;
+				}
 			}
 		}
 		else
@@ -2807,7 +2921,7 @@ void CollabVMServer::OnTurnInstruction(const std::shared_ptr<CollabVMUser>& user
 		if (args.size() == 1 && args[0][0] == '0')
 			user->vm_controller->EndTurn(user);
 		else
-			user->vm_controller->TurnRequest(user);
+			user->vm_controller->TurnRequest(user, 0, user->user_rank == UserRank::kAdmin || (user->user_rank == UserRank::kModerator && database_.Configuration.ModPerms & 64));
 	}
 }
 
@@ -4278,7 +4392,7 @@ void CollabVMServer::ParseServerSettings(rapidjson::Value& settings, rapidjson::
 				case kModPerms:
 					if (value.IsUint())
 					{
-						if (value.GetUint() <= std::numeric_limits<uint8_t>::max())
+						if (value.GetUint() <= std::numeric_limits<uint16_t>::max())
 						{
 							config.ModPerms = value.GetUint();
 						}

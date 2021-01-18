@@ -100,7 +100,7 @@ struct Config
 	/**
 	 * Moderator permissions.
 	 */
-	uint8_t ModPerms;
+	uint16_t ModPerms;
 
 	//FileMode FileUploadMode;
 	//std::string BlackList;
