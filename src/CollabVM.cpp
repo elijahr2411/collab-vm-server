@@ -452,8 +452,11 @@ void CollabVMServer::OnHttp(connection_hdl handle)
 	lock.unlock();
 
 	std::cout << "Requested resource: " << con->get_resource() << std::endl;
-	if (con->get_request_body().length() > 0)
-		std::cout << "Request body: " << con->get_request_body() << std::endl;
+#ifdef DEBUG
+    if (con->get_request_body().length() > 0)
+        std::cout << "Request body: " << con->get_request_body() << std::endl;
+#endif	// un-if this if Either: you've disabled it for /upload OR 
+		// ... you really want POST contents being sent (spammed) to your stdout
 	// Get path to resource
 	std::string path = con->get_resource();
 	// The path should begin with a slash
