@@ -42,6 +42,7 @@ Please email rightowner@gmail.com for any assistance.
 #include <fstream>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/algorithm/string.hpp>
 
 #ifdef _WIN32
 #include <sys/types.h>
@@ -160,7 +161,8 @@ enum SERVER_SETTINGS
 	kBanCommand,
 	kJPEGQuality,
 	kModEnabled,
-	kModPerms
+	kModPerms,
+	kBlacklistedNames
 };
 
 static const std::string server_settings_[] = {
@@ -172,7 +174,8 @@ static const std::string server_settings_[] = {
 	"ban-cmd",
 	"jpeg-quality",
 	"mod-enabled",
-	"mod-perms"
+	"mod-perms",
+	"blacklisted-usernames"
 };
 
 enum VM_SETTINGS
@@ -2244,8 +2247,22 @@ void CollabVMServer::OnRenameInstruction(const std::shared_ptr<CollabVMUser>& us
 	}
 	else
 	{
-		// The requested username is valid and available
-		ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
+		// Check if the username is blacklisted
+		// This is probably horribly inefficient
+		std::vector<std::string> fields;
+		boost::split(fields, database_.Configuration.BlacklistedNames, boost::is_any_of(";"));
+
+		if (std::find(fields.begin(), fields.end(), username) != fields.end())
+		{
+			// The requested username is blacklisted
+			// so let's just hand them their old username back
+			result = UsernameChangeResult::kBlacklisted;
+			ChangeUsername(user, user->username->c_str(), result, args.size() > 1);
+			return;
+		}else{
+			// The requested username is valid and available
+			ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
+		}
 		return;
 	}
 
@@ -4408,6 +4425,17 @@ void CollabVMServer::ParseServerSettings(rapidjson::Value& settings, rapidjson::
 					else
 					{
 						WriteJSONObject(writer, server_settings_[kModPerms], invalid_object_);
+						valid = false;
+					}
+					break;
+				case kBlacklistedNames:
+					if (value.IsString())
+					{
+						config.BlacklistedNames = string(value.GetString(), value.GetStringLength());
+					}
+					else
+					{
+						WriteJSONObject(writer, server_settings_[kBlacklistedNames], invalid_object_);
 						valid = false;
 					}
 					break;
