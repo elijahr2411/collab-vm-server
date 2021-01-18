@@ -11,7 +11,8 @@ build(){
 	DATE=$(date +"%x %I:%M %p")
 	UNAME_ARCH=$1
 	UNAME_KERN=$(uname -srv)
-	CVM_VERSION="v1.2.10~yellows111+darkok"
+	CVM_VERSION="v1.2.10"
+	OFFICIAL=0
 	if [ -e ./.git/refs/heads/master ]
 	then
 		UGIT_CHECKTAINTED=$(git status --porcelain --untracked-files=no | wc -l)
@@ -22,6 +23,9 @@ build(){
 		then UGIT_TAINTED=" (Tainted)";
 		else UGIT_TAINTED="";
 		fi;
+		if [ $OFFICIAL -eq 0 ]; then
+			CVM_VERSION+="~$(echo "$UGIT_FORKURL"|cut -d/ -f4)"
+			fi
 	else
 		UGIT_TAINTED=""
 		UGIT_COMMIT_ID="Unknown or Unmanaged"
