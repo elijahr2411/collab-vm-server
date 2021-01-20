@@ -1,4 +1,4 @@
-![[collab-vm-server] GCC 9 - Ubuntu 20.04](https://github.com/6-9-6-9/collab-vm-server/workflows/%5Bcollab-vm-server%5D%20GCC%209%20-%20Ubuntu%2020.04/badge.svg)
+![[collab-vm-server] GCC 9 - Ubuntu 20.04](https://github.com/yellows111/collab-vm-server/workflows/%5Bcollab-vm-server%5D%20GCC%209%20-%20Ubuntu%2020.04/badge.svg)
 ## collab-vm-server
 This repository contains all the necessary source files to compile CollabVM Server. The CollabVM Server (obviously) powers CollabVM, and it is what you will use to host it. You can either download already compiled binaries, or compile it yourself. Compilation instructions are provided below. 
 
