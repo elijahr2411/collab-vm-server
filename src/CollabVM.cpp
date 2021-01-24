@@ -2197,14 +2197,6 @@ void CollabVMServer::OnRenameInstruction(const std::shared_ptr<CollabVMUser>& us
 
 		if (!name_taken)
 		{
-			// The requested username is valid and available
-			ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
-			return;		
-		}
-	}
-	else
-	{
-		// Check if the username is blacklisted
 		if (std::find(blacklisted_usernames_.begin(), blacklisted_usernames_.end(), username) != blacklisted_usernames_.end()
 		    && user->user_rank != UserRank::kModerator
 		    && user->user_rank != UserRank::kAdmin)
@@ -2231,6 +2223,14 @@ void CollabVMServer::OnRenameInstruction(const std::shared_ptr<CollabVMUser>& us
 			SendWSMessage(*user, instr);
 			return;
 		}
+		else
+		{
+			// The requested username is valid and available
+			ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
+		}
+		return;
+		}
+	}
 
 	ChangeUsername(user, gen_username ? GenerateUsername() : *user->username.get(), result, args.size() > 1);
 }
