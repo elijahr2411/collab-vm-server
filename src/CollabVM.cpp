@@ -2197,6 +2197,7 @@ void CollabVMServer::OnRenameInstruction(const std::shared_ptr<CollabVMUser>& us
 
 		if (!name_taken)
 		{
+		// Check if the username is blacklisted
 		if (std::find(blacklisted_usernames_.begin(), blacklisted_usernames_.end(), username) != blacklisted_usernames_.end()
 		    && user->user_rank != UserRank::kModerator
 		    && user->user_rank != UserRank::kAdmin)
