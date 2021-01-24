@@ -2200,7 +2200,7 @@ void CollabVMServer::OnRenameInstruction(const std::shared_ptr<CollabVMUser>& us
 			// The requested username is valid and available
 			ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
 			return;		
-			}
+		}
 	}
 	else
 	{
