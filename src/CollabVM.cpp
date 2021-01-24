@@ -272,10 +272,6 @@ CollabVMServer::CollabVMServer(boost::asio::io_service& service) :
 	ip_data_timer_running_(false),
 	guest_rng_(1000, 99999),
 	rng_(steady_clock::now().time_since_epoch().count()),
-	chat_history_(new ChatMessage[database_.Configuration.ChatMsgHistory]),
-	chat_history_begin_(0),
-	chat_history_end_(0),
-	chat_history_count_(0),
 	upload_count_(0)
 {
 	// Create VMControllers for all VMs that will be auto-started
@@ -306,7 +302,6 @@ CollabVMServer::CollabVMServer(boost::asio::io_service& service) :
 
 CollabVMServer::~CollabVMServer()
 {
-	delete[] chat_history_;
 }
 
 std::shared_ptr<VMController> CollabVMServer::CreateVMController(const std::shared_ptr<VMSettings>& vm)
@@ -1077,14 +1072,6 @@ void CollabVMServer::RemoveConnection(std::shared_ptr<CollabVMUser>& user)
 	// to a nullptr (which is done by VMController::RemoveUser)
 	CancelFileUpload(*user);
 
-	if (user->vm_controller)
-		user->vm_controller->RemoveUser(user);
-
-	if (user->guac_user)
-	{
-		delete user->guac_user;
-	}
-
 	if (user->username)
 	{
 		// Remove the connection data from the map
@@ -1093,13 +1080,21 @@ void CollabVMServer::RemoveConnection(std::shared_ptr<CollabVMUser>& user)
 		ostringstream ss("7.remuser,1.1,", ostringstream::in | ostringstream::out | ostringstream::ate);
 		ss << user->username->length() << '.' << *user->username << ';';
 		string instr = ss.str();
-		for (auto it = connections_.begin(); it != connections_.end(); it++)
+		if (user->vm_controller)
 		{
-			std::shared_ptr<CollabVMUser> user = *it;
-			if (user->vm_controller) SendWSMessage(*user, instr);
+			user->vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& data)
+			{
+				SendWSMessage(data, instr);
+			});
+			user->vm_controller->RemoveUser(user);
 		}
 
 		user->username.reset();
+	}
+
+	if (user->guac_user)
+	{
+		delete user->guac_user;
 	}
 
 	unique_lock<std::mutex> ip_lock(ip_lock_);
@@ -1867,38 +1862,6 @@ void CollabVMServer::SendGuacMessage(const std::weak_ptr<void>& user_ptr, const 
 	server_.send(user->handle, str, websocketpp::frame::opcode::text, ec);
 }
 
-inline void CollabVMServer::AppendChatMessage(std::ostringstream& ss, ChatMessage* chat_msg)
-{
-	ss << ',' << chat_msg->username->length() << '.' << *chat_msg->username <<
-		',' << chat_msg->message.length() << '.' << chat_msg->message;
-}
-
-void CollabVMServer::SendChatHistory(CollabVMUser& user)
-{
-	if (chat_history_count_)
-	{
-		std::ostringstream ss("4.chat", std::ios_base::in | std::ios_base::out | std::ios_base::ate);
-		unsigned char len = database_.Configuration.ChatMsgHistory;
-		
-		// Iterate through each of the messages in the circular buffer
-		if (chat_history_end_ > chat_history_begin_)
-		{
-			for (unsigned char i = chat_history_begin_; i < chat_history_end_; i++)
-				AppendChatMessage(ss, &chat_history_[i]);
-		}
-		else
-		{
-			for (unsigned char i = chat_history_begin_; i < len; i++)
-				AppendChatMessage(ss, &chat_history_[i]);
-
-			for (unsigned char i = 0; i < chat_history_end_; i++)
-				AppendChatMessage(ss, &chat_history_[i]);
-		}
-		ss << ';';
-		SendWSMessage(user, ss.str());
-	}
-}
-
 bool CollabVMServer::ValidateUsername(const std::string& username)
 {
 	if (username.length() < kMinUsernameLen || username.length() > kMaxUsernameLen)
@@ -1945,22 +1908,6 @@ bool CollabVMServer::ValidateUsername(const std::string& username)
 	return false;
 }
 
-void CollabVMServer::SendOnlineUsersList(CollabVMUser& user)
-{
-	std::ostringstream ss("7.adduser,", std::ios_base::in | std::ios_base::out | std::ios_base::ate);
-	std::string num = std::to_string(usernames_.size());
-	ss << num.size() << '.' << num;
-	for (auto it = usernames_.begin(); it != usernames_.end(); it++)
-	{
-		std::shared_ptr<CollabVMUser> data = it->second;
-		// Append the user to the online users list
-		num = std::to_string(data->user_rank);
-		ss << ',' << data->username->length() << '.' << *data->username << ',' << num.size() << '.' << num;
-	}
-	ss << ';';
-	SendWSMessage(user, ss.str());
-}
-
 void CollabVMServer::ChangeUsername(const std::shared_ptr<CollabVMUser>& data, const std::string& new_username, UsernameChangeResult result, bool send_history)
 {
 	// Send a rename instruction to the client telling them their username
@@ -1984,27 +1931,15 @@ void CollabVMServer::ChangeUsername(const std::shared_ptr<CollabVMUser>& data, c
 	if (result != UsernameChangeResult::kSuccess)
 		return;
 
-	if (!usernames_.empty())
+	if (!usernames_.empty() && data->vm_controller)
 	{
-		// If the client did not previously have a username then
-		// it means the client is joining the server
-		bool user_joining = !data->username;
+		instr = "6.rename,1.1,";
+		// Append the old username
+		instr += std::to_string(data->username->length());
+		instr += '.';
+		instr += *data->username;
+		instr += ',';
 
-		// Create an adduser instruction if the client is joining,
-		// otherwise create a rename instruction to update the user's username
-		if (user_joining)
-		{
-			instr = "7.adduser,1.1,";
-		}
-		else
-		{
-			instr = "6.rename,1.1,";
-			// Append the old username
-			instr += std::to_string(data->username->length());
-			instr += '.';
-			instr += *data->username;
-			instr += ',';
-		}
 		// Append the new username and user type to the instruction
 		instr += std::to_string(new_username.length());
 		instr += '.';
@@ -2016,12 +1951,10 @@ void CollabVMServer::ChangeUsername(const std::shared_ptr<CollabVMUser>& data, c
 		instr += ';';
 
 		// Send instruction to all users viewing a VM
-		for (auto it = connections_.begin(); it != connections_.end(); it++)
+		data->vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& user)
 		{
-			std::shared_ptr<CollabVMUser> user = *it;
-			if (user->vm_controller)
-				SendWSMessage(*user, instr);
-		}
+			SendWSMessage(user, instr);
+		});
 	}
 
 	// If the user had an old username delete it from the usernames_ map
@@ -2224,26 +2157,36 @@ void CollabVMServer::OnRenameInstruction(const std::shared_ptr<CollabVMUser>& us
 			result = UsernameChangeResult::kInvalid;
 		}
 	}
-	else if (usernames_.find(username) != usernames_.end())
-	{
-		// The requested username is already taken
-		if (!user->username)
-		{
-			// Respond with successful result and generate a new
-			// username so the user can join
-			gen_username = true;
-			result = UsernameChangeResult::kSuccess;
-		}
-		else
-		{
-			result = UsernameChangeResult::kUsernameTaken;
-		}
-	}
 	else
 	{
-		// The requested username is valid and available
-		ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
-		return;
+		bool name_taken = false;
+		if (user->vm_controller)
+			user->vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& data)
+			{
+				if (*data.username == username)
+				{
+					// The requested username is already taken
+					name_taken = true;
+					if (!user->username)
+					{
+						// Respond with successful result and generate a new
+						// username so the user can join
+						gen_username = true;
+						result = UsernameChangeResult::kSuccess;
+					}
+					else
+					{
+						result = UsernameChangeResult::kUsernameTaken;
+					}
+				}
+			});
+
+		if (!name_taken)
+		{
+			// The requested username is valid and available
+			ChangeUsername(user, username, UsernameChangeResult::kSuccess, args.size() > 1);
+			return;
+		}
 	}
 
 	ChangeUsername(user, gen_username ? GenerateUsername() : *user->username.get(), result, args.size() > 1);
@@ -2311,7 +2254,7 @@ void CollabVMServer::OnConnectInstruction(const std::shared_ptr<CollabVMUser>& u
 		}
 		return;
 	}
-	else if (args.size() != 1 || user->guac_user != nullptr || !user->username)
+	else if (args.size() != 1 || user->guac_user != nullptr)
 	{
 		return;
 	}
@@ -2344,11 +2287,42 @@ void CollabVMServer::OnConnectInstruction(const std::shared_ptr<CollabVMUser>& u
 	AppendVMActions(controller, controller.GetSettings(), instr);
 	SendWSMessage(*user, instr);
 
-	SendOnlineUsersList(*user);
-	SendChatHistory(*user);
+	bool name_taken = false;
+	if (user->username)
+		controller.GetUsersList().ForEachUser([&](CollabVMUser& data)
+		{
+			if (*data.username == *user->username)
+			{
+				// The requested username is already taken
+				name_taken = true;
+			}
+		});
+
+	if (!user->username || name_taken)
+		ChangeUsername(user, GenerateUsername(), UsernameChangeResult::kSuccess, false);
 
 	user->guac_user = new GuacUser(this, user);
 	controller.AddUser(user);
+
+	std::string rank = std::to_string(user->user_rank);
+	instr = "7.adduser,1.1,";
+	instr += std::to_string(user->username->length());
+	instr += '.';
+	instr += *user->username;
+	instr += ',';
+	instr += std::to_string(rank.length());
+	instr += '.';
+	instr += rank;
+	instr += ';';
+
+	controller.GetUsersList().ForEachUser([&](CollabVMUser& data)
+	{
+		if (*data.username != *user->username)
+			SendWSMessage(data, instr);
+	});
+
+	controller.SendOnlineUsersList(*user);
+	controller.SendChatHistory(*user);
 }
 
 void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& user, std::vector<char*>& args)
@@ -2411,7 +2385,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 				if (*data.username != *user->username)
 					SendWSMessage(data, adminUser);
 			});
-			SendOnlineUsersList(*user); // send userlist
+			user->vm_controller->SendOnlineUsersList(*user); // send userlist
 		}
 		user->admin_connected = false;
 		admin_connections_.erase(user);
@@ -2448,7 +2422,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 						if (*data.username != *user->username)
 							SendWSMessage(data, adminUser);
 					});
-					SendOnlineUsersList(*user); // send userlist
+					user->vm_controller->SendOnlineUsersList(*user); // send userlist
 				}
 			}
 			else
@@ -2482,7 +2456,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 						if (*data.username != *user->username)
 							SendWSMessage(data, adminUser);
 					});
-					SendOnlineUsersList(*user); // send userlist
+					user->vm_controller->SendOnlineUsersList(*user); // send userlist
 				}
 		}
 		else if(args.size() == 2 && args[1] == database_.Configuration.ModPassword && database_.Configuration.ModEnabled)
@@ -2512,7 +2486,7 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 					if (*data.username != *user->username)
 						SendWSMessage(data, adminUser);
 				});
-				SendOnlineUsersList(*user); // send userlist
+				user->vm_controller->SendOnlineUsersList(*user); // send userlist
 			}
 		}
 		else
@@ -2628,29 +2602,26 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		}
 		break;
 	case kBanUser:
-		if (args.size() == 2 && database_.Configuration.BanCommand != "")
-			for (auto it = connections_.begin(); it != connections_.end(); it++)
+		if (args.size() == 2 && database_.Configuration.BanCommand != "" && user->vm_controller)
+			user->vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& data)
 			{
-				std::shared_ptr<CollabVMUser> banUser = *it;
-				if (!banUser->username) continue;
-				if (*banUser->username == args[1])
+				if (*data.username == args[1])
 				{
 					// Replace $IP in ban command with user's IP
 					std::string banCmd = database_.Configuration.BanCommand;
 					for (size_t it = 0; banCmd.find("$IP",it) != std::string::npos; it = banCmd.find("$IP",it))
-						banCmd.replace(banCmd.find("$IP",it),3,banUser->ip_data.GetIP());
+						banCmd.replace(banCmd.find("$IP",it),3,data.ip_data.GetIP());
 					for (size_t it = 0; banCmd.find("$NAME",it) != std::string::npos; it = banCmd.find("$NAME",it))
-						banCmd.replace(banCmd.find("$NAME",it),5,*banUser->username);
+						banCmd.replace(banCmd.find("$NAME",it),5,*data.username);
 					// Block user's IP
 					ExecuteCommandAsync(banCmd);
 					// Disconnect user
 					unique_lock<std::mutex> lock(process_queue_lock_);
-					process_queue_.push(new UserAction(*banUser, ActionType::kRemoveConnection));
+					process_queue_.push(new UserAction(data, ActionType::kRemoveConnection));
 					lock.unlock();
 					process_wait_.notify_one();
-					break;
 				}
-			}
+			});
 		break;
 	case kForceVote:
 	  if (user->vm_controller != nullptr) {
@@ -2659,49 +2630,39 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 	  };
 	  break;
 	case kMuteUser:
-		if (args.size() == 3)
-			for (auto it = connections_.begin(); it != connections_.end(); it++)
+		if (args.size() == 3 && user->vm_controller)
+			user->vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& data)
 			{
-				std::shared_ptr<CollabVMUser> mutedUser = *it;
-				if (!mutedUser->username) continue;
-				if (*mutedUser->username == args[1])
+				if (*data.username == args[1])
 				{
 					if (args[2][0] == '2')
-						UnmuteUser(mutedUser);
+						UnmuteUser(std::make_shared<CollabVMUser>(data));
 					else
-						MuteUser(mutedUser, args[2][0] == '1');
-					break;
+						MuteUser(std::make_shared<CollabVMUser>(data), args[2][0] == '1');
 				}
-			}
+			});
 		break;
     case kKickUser:
-        if (args.size() == 2) {
-            for (auto it = connections_.begin(); it != connections_.end(); it++)
+        if (args.size() == 2 && user->vm_controller) {
+            user->vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& data)
             {
-                std::shared_ptr<CollabVMUser> kickUser = *it;
-                if (!kickUser->username) continue;
-                if (*kickUser->username == args[1])
+                if (*data.username == args[1])
                 {
                     // Disconnect user
                     unique_lock<std::mutex> lock(process_queue_lock_);
-                    process_queue_.push(new UserAction(*kickUser, ActionType::kRemoveConnection));
+                    process_queue_.push(new UserAction(data, ActionType::kRemoveConnection));
                     lock.unlock();
                     process_wait_.notify_one();
-                    break;
                 };
-            };
+            });
 		};
         break;
 	case kEndUserTurn:
 		if (args.size() == 2 && user->vm_controller != nullptr) {
-			for (auto it = connections_.begin(); it != connections_.end(); it++) {
-				std::shared_ptr<CollabVMUser> endTurnUser = *it;
-				if (!endTurnUser->username) continue;
-				if (*endTurnUser->username == args[1]) {
-					user->vm_controller->EndTurn(endTurnUser);
-					break;
-				};
-			};
+			user->vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& data) {
+				if (*data.username == args[1])
+					data.vm_controller->EndTurn(std::make_shared<CollabVMUser>(data));
+			});
 		};
 		break;
 	case kClearTurnQueue:
@@ -2713,18 +2674,20 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		};
 		break;
 	case kRenameUser:
-		if (args.size() == 2 || args.size() == 3) {
-			for (auto it = connections_.begin(); it != connections_.end(); it++) {
-				std::shared_ptr<CollabVMUser> changeNameUser = *it;
+		if ((args.size() == 2 || args.size() == 3) && user->vm_controller) {
+			user->vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& data) {
 				UsernameChangeResult cnResult = UsernameChangeResult::kSuccess;
-				if (!changeNameUser->username) continue;
-				if (*changeNameUser->username == args[1]) {
+				if (*data.username == args[1]) {
 					if (args.size() == 2) {
-						ChangeUsername(changeNameUser, GenerateUsername(), cnResult, 0);
+						ChangeUsername(std::make_shared<CollabVMUser>(data), GenerateUsername(), cnResult, 0);
 					} else {
-						if (usernames_.find(args[2]) != usernames_.end()) cnResult = UsernameChangeResult::kUsernameTaken;
-						else if (ValidateUsername(args[2])) {
-							ChangeUsername(changeNameUser, args[2], cnResult, 0);
+						data.vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& vmUser)
+						{
+							if (*vmUser.username == args[2])
+								cnResult = UsernameChangeResult::kUsernameTaken;
+						});
+						if (cnResult != UsernameChangeResult::kUsernameTaken && ValidateUsername(args[2])) {
+							ChangeUsername(std::make_shared<CollabVMUser>(data), args[2], cnResult, 0);
 						} else {
 							cnResult = UsernameChangeResult::kInvalid;
 						};
@@ -2733,30 +2696,26 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 					instr += cnResult;
 					instr += ";";
 					SendWSMessage(*user, instr);
-					break;
 				};
-			};
+			});
 		};
 		break;
 	case kUserIP:
-		if (args.size() == 2) {
-			for (auto it = connections_.begin(); it != connections_.end(); it++) {
-				std::shared_ptr<CollabVMUser> theUser = *it;
-				if (!theUser->username) continue;
-				if (*theUser->username == args[1]) {
+		if (args.size() == 2 && user->vm_controller) {
+			user->vm_controller->GetUsersList().ForEachUser([&](CollabVMUser& data) {
+				if (*data.username == args[1]) {
 					std::string instr = "5.admin,2.19,";
-					instr += std::to_string(theUser->username->length());
+					instr += std::to_string(data.username->length());
 					instr += ".";
-					instr += *theUser->username;
+					instr += *data.username;
 					instr += ",";
-					instr += std::to_string(theUser->ip_data.GetIP().length());
+					instr += std::to_string(data.ip_data.GetIP().length());
 					instr += ".";
-					instr += theUser->ip_data.GetIP();
+					instr += data.ip_data.GetIP();
 					instr += ";";
 					SendWSMessage(*user, instr);
-					break;
 				};
-			};
+			});
 		};
 		break;
 	case kForceTakeTurn:
@@ -2828,7 +2787,7 @@ void CollabVMServer::OnQEMUResponse(std::weak_ptr<CollabVMUser> data, rapidjson:
 
 void CollabVMServer::OnChatInstruction(const std::shared_ptr<CollabVMUser>& user, std::vector<char*>& args)
 {
-	if (args.size() != 1 || !user->username)
+	if (args.size() != 1 || !user->username || !user->vm_controller)
 		return;
 
 	// Limit message send rate
@@ -2869,49 +2828,7 @@ void CollabVMServer::OnChatInstruction(const std::shared_ptr<CollabVMUser>& user
 	if (msg.empty())
 		return;
 
-	if (database_.Configuration.ChatMsgHistory)
-	{
-		// Add the message to the chat history
-		ChatMessage* chat_message = &chat_history_[chat_history_end_];
-		chat_message->timestamp = now;
-		chat_message->username = user->username;
-		chat_message->message = msg;
-
-		uint8_t last_index = database_.Configuration.ChatMsgHistory - 1;
-
-		if (chat_history_end_ == chat_history_begin_ && chat_history_count_)
-		{
-			// Increment the begin index
-			if (chat_history_begin_ == last_index)
-				chat_history_begin_ = 0;
-			else
-				chat_history_begin_++;
-		}
-		else
-		{
-			chat_history_count_++;
-		}
-
-		// Increment the end index
-		if (chat_history_end_ == last_index)
-			chat_history_end_ = 0;
-		else
-			chat_history_end_++;
-	}
-
-
-	std::string instr = "4.chat,";
-	instr += std::to_string(user->username->length());
-	instr += '.';
-	instr += *user->username;
-	instr += ',';
-	instr += std::to_string(msg.length());
-	instr += '.';
-	instr += msg;
-	instr += ';';
-
-	for (auto it = connections_.begin(); it != connections_.end(); it++)
-		SendWSMessage(**it, instr);
+	user->vm_controller->SendChatMsg(user, msg);
 }
 
 void CollabVMServer::OnTurnInstruction(const std::shared_ptr<CollabVMUser>& user, std::vector<char*>& args)

@@ -16,6 +16,12 @@
 
 class CollabVMServer;
 struct VMSettings;
+struct ChatMessage
+{
+	std::shared_ptr<std::string> username;
+	std::string message;
+	std::chrono::time_point<std::chrono::steady_clock, std::chrono::seconds> timestamp;
+};
 
 /**
  * A base class that is responsible for starting the hypervisor, running the VM,
@@ -118,6 +124,20 @@ public:
 	void EndVote(bool cancelVote);
 
 	void TurnRequest(const std::shared_ptr<CollabVMUser>& user, bool turnJack, bool isStaff);
+
+	void AppendChatMessage(std::ostringstream& ss, ChatMessage* chat_msg);
+
+	/**
+	 * Sends the remembered chat history to the specified user.
+	 */
+	void SendChatHistory(CollabVMUser& user);
+
+	void SendChatMsg(const std::shared_ptr<CollabVMUser>& user, std::string msg);
+
+	/**
+	 * The the list of all online users to the specified client.
+	 */
+	void SendOnlineUsersList(CollabVMUser& user);
 
 	/**
 	 * After a turn has ended, this function will update the turn
@@ -273,5 +293,25 @@ private:
 	//std::string turn_list_cache_;
 
 	const uint32_t kMaxFilenameLen = 100;
+
+	/**
+	 * Circular buffer used for storing chat history.
+	 */
+	ChatMessage* chat_history_;
+
+	/**
+	 * Begin index for the circular chat history buffer.
+	 */
+	uint8_t chat_history_begin_;
+
+	/**
+	 * End index for the circular chat history buffer.
+	 */
+	uint8_t chat_history_end_;
+
+	/**
+	 * The number of messages in the chat history buffer.
+	 */
+	uint8_t chat_history_count_;
 
 };
