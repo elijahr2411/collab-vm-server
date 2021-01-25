@@ -2,7 +2,7 @@ name: "[collab-vm-server] GCC 9 - Ubuntu 20.04"
 
 on:
     push:
-        branches: [ master, unstable ]
+        branches: [ master ]
     pull_request:
         branches: [ master ]
 
