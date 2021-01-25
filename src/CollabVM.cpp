@@ -2364,9 +2364,6 @@ void CollabVMServer::OnConnectInstruction(const std::shared_ptr<CollabVMUser>& u
 		if (*data.username != *user->username)
 			SendWSMessage(data, instr);
 	});
-
-	controller.SendOnlineUsersList(*user);
-	controller.SendChatHistory(*user);
 }
 
 void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& user, std::vector<char*>& args)

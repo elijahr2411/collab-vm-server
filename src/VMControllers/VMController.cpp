@@ -393,6 +393,9 @@ void VMController::AddUser(const std::shared_ptr<CollabVMUser>& user)
 {
 	users_.AddUser(*user, [this](CollabVMUser& user) { OnAddUser(user); });
 
+	controller.SendOnlineUsersList(*user);
+	controller.SendChatHistory(*user);
+
 	int32_t time_remaining;
 	if (current_turn_)
 	{
