@@ -17,11 +17,7 @@ VMController::VMController(CollabVMServer& server, boost::asio::io_service& serv
 	stop_reason_(StopReason::kNormal),
 	thumbnail_str_(nullptr),
 	agent_timer_(service),
-	agent_connected_(false),
-	chat_history_(new ChatMessage[server_.GetChatLength()]),
-	chat_history_begin_(0),
-	chat_history_end_(0),
-	chat_history_count_(0)
+	agent_connected_(false)
 {
 }
 
@@ -430,104 +426,6 @@ void VMController::RemoveUser(const std::shared_ptr<CollabVMUser>& user)
 	users_.RemoveUser(*user, [this](CollabVMUser& user) { OnRemoveUser(user); });
 }
 
-inline void VMController::AppendChatMessage(std::ostringstream& ss, ChatMessage* chat_msg)
-{
-	ss << ',' << chat_msg->username->length() << '.' << *chat_msg->username <<
-		',' << chat_msg->message.length() << '.' << chat_msg->message;
-}
-
-void VMController::SendChatHistory(CollabVMUser& user)
-{
-	if (chat_history_count_)
-	{
-		std::ostringstream ss("4.chat", std::ios_base::in | std::ios_base::out | std::ios_base::ate);
-		unsigned char len = server_.GetChatLength();
-
-		// Iterate through each of the messages in the circular buffer
-		if (chat_history_end_ > chat_history_begin_)
-		{
-			for (unsigned char i = chat_history_begin_; i < chat_history_end_; i++)
-				AppendChatMessage(ss, &chat_history_[i]);
-		}
-		else
-		{
-			for (unsigned char i = chat_history_begin_; i < len; i++)
-				AppendChatMessage(ss, &chat_history_[i]);
-
-			for (unsigned char i = 0; i < chat_history_end_; i++)
-				AppendChatMessage(ss, &chat_history_[i]);
-		}
-		ss << ';';
-		server_.SendWSMessage(user, ss.str());
-	}
-}
-
-void VMController::SendChatMsg(const std::shared_ptr<CollabVMUser>& user, std::string msg)
-{
-	auto now = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::steady_clock::now());
-
-	if (server_.GetChatLength())
-	{
-		// Add the message to the chat history
-		ChatMessage* chat_message = &chat_history_[chat_history_end_];
-		chat_message->timestamp = now;
-		chat_message->username = user->username;
-		chat_message->message = msg;
-
-		uint8_t last_index = server_.GetChatLength() - 1;
-
-		if (chat_history_end_ == chat_history_begin_ && chat_history_count_)
-		{
-			// Increment the begin index
-			if (chat_history_begin_ == last_index)
-				chat_history_begin_ = 0;
-			else
-				chat_history_begin_++;
-		}
-		else
-		{
-			chat_history_count_++;
-		}
-
-		// Increment the end index
-		if (chat_history_end_ == last_index)
-			chat_history_end_ = 0;
-		else
-			chat_history_end_++;
-	}
-
-
-	std::string instr = "4.chat,";
-	instr += std::to_string(user->username->length());
-	instr += '.';
-	instr += *user->username;
-	instr += ',';
-	instr += std::to_string(msg.length());
-	instr += '.';
-	instr += msg;
-	instr += ';';
-
-	users_.ForEachUser([&](CollabVMUser& user)
-	{
-		server_.SendWSMessage(user, instr);
-	});
-}
-
-void VMController::SendOnlineUsersList(CollabVMUser& user)
-{
-	std::ostringstream ss("7.adduser,", std::ios_base::in | std::ios_base::out | std::ios_base::ate);
-	std::string num = std::to_string(users_.GetUserCount());
-	ss << num.size() << '.' << num;
-	users_.ForEachUser([&](CollabVMUser& data)
-	{
-		// Append the user to the online users list
-		num = std::to_string(data.user_rank);
-		ss << ',' << data.username->length() << '.' << *data.username << ',' << num.size() << '.' << num;
-	});
-	ss << ';';
-	server_.SendWSMessage(user, ss.str());
-}
-
 void VMController::NewThumbnail(std::string* str)
 {
 	server_.OnVMControllerThumbnailUpdate(shared_from_this(), str);
@@ -541,5 +439,4 @@ bool VMController::IsFileUploadValid(const std::shared_ptr<CollabVMUser>& user, 
 
 VMController::~VMController()
 {
-	delete[] chat_history_;
 }
