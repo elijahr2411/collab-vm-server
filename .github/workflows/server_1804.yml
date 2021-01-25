@@ -62,8 +62,8 @@ jobs:
         ./scripts/grab_deps_linux.sh 
     - name: Downgrade GCC to 7.3 # blame odb
       run: |
-        sudo apt install gcc-7-base=7.3.0-16ubuntu3 cpp-7=7.3.0-16ubuntu3 gcc-7=7.3.0-16ubuntu3 libgcc-7-dev=7.3.0-16ubuntu3 libasan4=7.3.0-16ubuntu3 libubsan0=7.3.0-16ubuntu3 libcilkrts5=7.3.0-16ubuntu3  
-        sudo apt install g++-7=7.3.0-16ubuntu3 libstdc++-7-dev=7.3.0-16ubuntu3  
+        sudo apt install --allow-downgrades gcc-7-base=7.3.0-16ubuntu3 cpp-7=7.3.0-16ubuntu3 gcc-7=7.3.0-16ubuntu3 libgcc-7-dev=7.3.0-16ubuntu3 libasan4=7.3.0-16ubuntu3 libubsan0=7.3.0-16ubuntu3 libcilkrts5=7.3.0-16ubuntu3  
+        sudo apt install --allow-downgrades g++-7=7.3.0-16ubuntu3 libstdc++-7-dev=7.3.0-16ubuntu3  
         sudo ln -s /usr/bin/g++-7 /usr/bin/g++  
         sudo ln -s /usr/bin/gcc-7 /usr/bin/gcc  
         sudo ln -s /usr/bin/gcc /usr/bin/cc
