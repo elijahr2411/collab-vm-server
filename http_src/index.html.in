@@ -19,7 +19,7 @@
         <h1>Details about this host & Collab VM</h1>
         <b>Collab VM Version:</b> [CVM_VERSION]<br>
 		<b>Commit ID:</b> <kbd>[GIT_ID][GIT_IS_TAINTED]</kbd><br>
-		<b>Fork source:</b> <a href="[GIT_FORK_URL]">[GIT_FORK_NAME]</a><br>
+		<b>Fork source:</b> <a href="[GIT_FORK_URL]">[GIT_FORK_NAME]</a>[GIT_BRANCH]<br>
         <b>Compilation date:</b> [HOST_DATE]<br>
         <b>Host:</b> [HOST_UNAME_OS], [HOST_UNAME_ARCH]<br>
       </div>
