@@ -30,6 +30,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Upgrade APT
+      run: |
+        wget http://snapshot.debian.org/archive/debian/20150821T213547Z/pool/main/a/apt/apt_1.0.10.2.tar.xz
+        tar -xvf apt_1.0.10.2.tar.xz
+        cd apt-1.0.10.2
+        sudo apt install build-essential
+        ./configure
+        make
+        sudo make install
     - name: Install dependencies
       run: |
         sudo printf "\ndeb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main" >> /etc/apt/sources.list
@@ -53,6 +62,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Upgrade APT
+      run: |
+        wget http://snapshot.debian.org/archive/debian/20150821T213547Z/pool/main/a/apt/apt_1.0.10.2.tar.xz
+        tar -xvf apt_1.0.10.2.tar.xz
+        cd apt-1.0.10.2
+        sudo apt install build-essential
+        ./configure
+        make
+        sudo make install
     - name: Install dependencies
       run: |
         sudo printf "\ndeb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main" >> /etc/apt/sources.list
