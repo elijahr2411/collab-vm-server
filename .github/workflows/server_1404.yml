@@ -33,7 +33,7 @@ jobs:
     - name: Upgrade APT
       run: |
         sudo apt update
-        sudo apt install wget libc6-dev gcc-4.8 g++-4.8
+        sudo apt install wget libc6-dev gcc-4.8 g++-4.8 --force-yes -y
         wget http://snapshot.debian.org/archive/debian/20150821T213547Z/pool/main/a/apt/apt_1.0.10.2.tar.xz
         tar -xvf apt_1.0.10.2.tar.xz
         cd apt-1.0.10.2
@@ -66,7 +66,7 @@ jobs:
     - name: Upgrade APT
       run: |
         sudo apt update
-        sudo apt install wget libc6-dev gcc-4.8 g++-4.8
+        sudo apt install wget libc6-dev gcc-4.8 g++-4.8 --force-yes -y
         wget http://snapshot.debian.org/archive/debian/20150821T213547Z/pool/main/a/apt/apt_1.0.10.2.tar.xz
         tar -xvf apt_1.0.10.2.tar.xz
         cd apt-1.0.10.2
