@@ -37,6 +37,7 @@ jobs:
         sudo apt update
         sudo apt install wget libc6-dev gcc-5 g++-5 xz-utils --force-yes -y
         ./scripts/grab_deps_linux.sh
+        sudo apt install make --force-yes -y
     - name: Make PNG build      
       run: |
         make -j$(nproc) NO_NATIVE=1
@@ -61,6 +62,7 @@ jobs:
         sudo apt update
         sudo apt install wget libc6-dev gcc-4.8 g++-4.8 xz-utils --force-yes -y
         ./scripts/grab_deps_linux.sh
+        sudo apt install make --force-yes -y
     - name: Make JPEG build
       run: |
         make -j$(nproc) JPEG=1 NO_NATIVE=1
