@@ -30,22 +30,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Upgrade APT
-      run: |
-        sudo apt update
-        sudo apt install wget libc6-dev gcc-4.8 g++-4.8 xz-utils --force-yes -y
-        wget http://snapshot.debian.org/archive/debian/20150821T213547Z/pool/main/a/apt/apt_1.0.10.2.tar.xz
-        tar -xvf apt_1.0.10.2.tar.xz
-        cd apt-1.0.10.2
-        ./configure
-        make
-        sudo make install
     - name: Install dependencies
       run: |
         sudo printf "\ndeb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main" >> /etc/apt/sources.list
         sudo printf "\ndeb-src http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main" >> /etc/apt/sources.list
         sudo apt update
-        ./scripts/grab_deps_linux.sh 
+        sudo apt install wget libc6-dev gcc-5 g++-5 xz-utils --force-yes -y
+        ./scripts/grab_deps_linux.sh
     - name: Make PNG build      
       run: |
         make -j$(nproc) NO_NATIVE=1
@@ -63,22 +54,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Upgrade APT
-      run: |
-        sudo apt update
-        sudo apt install wget libc6-dev gcc-4.8 g++-4.8 xz-utils --force-yes -y
-        wget http://snapshot.debian.org/archive/debian/20150821T213547Z/pool/main/a/apt/apt_1.0.10.2.tar.xz
-        tar -xvf apt_1.0.10.2.tar.xz
-        cd apt-1.0.10.2
-        ./configure
-        make
-        sudo make install
     - name: Install dependencies
       run: |
         sudo printf "\ndeb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main" >> /etc/apt/sources.list
         sudo printf "\ndeb-src http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main" >> /etc/apt/sources.list
         sudo apt update
-        ./scripts/grab_deps_linux.sh 
+        sudo apt install wget libc6-dev gcc-4.8 g++-4.8 xz-utils --force-yes -y
+        ./scripts/grab_deps_linux.sh
     - name: Make JPEG build
       run: |
         make -j$(nproc) JPEG=1 NO_NATIVE=1
