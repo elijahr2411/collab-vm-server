@@ -761,7 +761,7 @@ void QEMUController::GuacDisconnect()
 	// Restart the Guacamole client if we are not stopping
 	if (internal_state_ == InternalState::kVNCConnecting)
 	{
-		std::cout << "Guacamole client failed to connect.";
+		std::cout << "Gaucamole client failed to connect.";
 		// If we have exceeded the max number of connection attempts
 		if (++retry_count_ >= settings_->MaxAttempts)
 		{
