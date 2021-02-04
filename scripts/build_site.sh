@@ -18,7 +18,6 @@ build(){
 		UGIT_CHECKTAINTED=$(git status --porcelain --untracked-files=no | wc -l)
 		UGIT_COMMIT_ID=$(git rev-parse head >/dev/null 2>&1 && git rev-parse head || git rev-parse master)
 		UGIT_FORKNAME=$(git remote get-url origin)
-		UGIT_BRANCH=", in branch <kbd>$(git branch --show-current)</kbd>"
 		UGIT_FORKURL=$UGIT_FORKNAME
 		if [ $UGIT_CHECKTAINTED -gt 0 ];
 		then UGIT_TAINTED=" (Tainted)";
@@ -32,7 +31,6 @@ build(){
 		UGIT_COMMIT_ID="Unknown or Unmanaged"
 		UGIT_FORKNAME="Unknown"
 		UGIT_FORKURL="https://github.com/computernewb/collab-vm-server"
-		UGIT_BRANCH=""
 	fi
 	if [[ "$(uname -s)" == *"MINGW64_NT"* || "$(uname -s)" == *"MINGW32_NT"* || "$(uname -s)" == *"CYGWIN_NT"* ]]; then
 		# Extract the Windows version from the uname -s result of MINGW64_NT-<WINDOWS_VER>
@@ -80,7 +78,6 @@ build(){
 	INSRC=${INSRC//"[GIT_FORK_NAME]"/$UGIT_FORKNAME}
 	INSRC=${INSRC//"[GIT_FORK_URL]"/$UGIT_FORKURL}
 	INSRC=${INSRC//"[CVM_VERSION]"/$CVM_VERSION}
-	INSRC=${INSRC//"[GIT_BRANCH]"/$UGIT_BRANCH}
 
 	log "Writing preprocessed page(s)..."
 	echo $INSRC > http/index.html.in

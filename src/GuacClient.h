@@ -161,7 +161,7 @@ protected:
 	virtual void OnUserLeave(GuacUser& user) = 0;
 
 	/**
-	 * Handler for mouse events sent by the Guacamole web-client.
+	 * Handler for mouse events sent by the Gaucamole web-client.
 	 */
 	virtual void MouseHandler(GuacUser& user, int x, int y, int button_mask) = 0;
 

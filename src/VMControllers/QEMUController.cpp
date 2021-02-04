@@ -383,45 +383,34 @@ void QEMUController::StartQEMU()
 {
 #ifdef _WIN32
 
-	// This is meant to be a temporary hack to get resets working on Windows, but knowing the way things
-	// go, this might end up being permanent.
-
-	std::string qemu_cmdline;
-
-	for (auto it = qemu_command_.begin(); it != qemu_command_.end(); it++){
-			qemu_cmdline += std::string(*it);
-			qemu_cmdline += " ";
-	}
-
 	if (settings_->QEMUSnapshotMode == VMSettings::SnapshotMode::kVMSnapshots && !snapshot_.empty())
 	{
 		// Append loadvm command to start with snapshot
-		qemu_cmdline += "-loadvm ";
-		qemu_cmdline += snapshot_;
-		qemu_cmdline += " ";
+		qemu_command_.push_back("-loadvm");
+		qemu_command_.push_back(snapshot_.c_str());
 	}
 	else if (settings_->QEMUSnapshotMode == VMSettings::SnapshotMode::kHDSnapshots)
-		qemu_cmdline += "-snapshot ";
+		qemu_command_.push_back("-snapshot");
 
 	//if (settings_->QEMUSnapshotMode == VMSettings::SnapshotMode::)
-	qemu_cmdline += "-no-shutdown ";
+	qemu_command_.push_back("-no-shutdown");
 
 	// QMP address
-	qemu_cmdline += "-qmp ";
+	qemu_command_.push_back("-qmp");
 	std::string qmp_arg;
 	
 	qmp_arg = "tcp:";
 	qmp_arg += qmp_address_;
-	qmp_arg += ",server,nodelay ";
-	qemu_cmdline += qmp_arg;
+	qmp_arg += ",server,nodelay";
+	qemu_command_.push_back(qmp_arg.c_str());
 	
 	/*
 	else
 	{
 		qmp_arg = "pipe:";
 		qmp_arg += qmp_address_;
-		qmp_arg += ",server ";
-		qemu_cmdline += qmp_arg;
+		qmp_arg += ",server";
+		qemu_command_.push_back(qmp_arg.c_str());
 	}
 	*/
 
@@ -431,7 +420,7 @@ void QEMUController::StartQEMU()
 		if (settings_->AgentUseVirtio)
 		{
 			// -chardev socket,id=agent,host=10.0.2.15,port=5700,nodelay,server,nowait -device virtio-serial -device virtserialport,chardev=agent
-			qemu_cmdline += "-chardev ";
+			qemu_command_.push_back("-chardev");
 			arg = "socket,id=agent,";
 			if (settings_->AgentSocketType == VMSettings::SocketType::kTCP)
 			{
@@ -447,43 +436,52 @@ void QEMUController::StartQEMU()
 				arg += agent_address_;
 			}
 			arg += ",server,nowait";
-			qemu_cmdline += arg;
+			qemu_command_.push_back(arg.c_str());
 
-			qemu_cmdline += " -device ";
-			qemu_cmdline += "virtio-serial ";
+			qemu_command_.push_back("-device");
+			qemu_command_.push_back("virtio-serial");
 
-			qemu_cmdline += "-device ";
-			qemu_cmdline += "virtserialport,chardev=agent ";
+			qemu_command_.push_back("-device");
+			qemu_command_.push_back("virtserialport,chardev=agent");
 		}
 		else
 		{
 			// Serial address
-			qemu_cmdline += "-serial ";
+			qemu_command_.push_back("-serial");
 			if (settings_->AgentSocketType == VMSettings::SocketType::kTCP)
 			{
 				arg = "tcp:";
 				arg += agent_address_;
 				// nowait is used because the AgentClient does not connect
 				// until after the VM has been started with QMP
-				arg += ",server,nowait,nodelay ";
+				arg += ",server,nowait,nodelay";
 			}
 			else
 			{
 				arg = "unix:";
 				arg += agent_address_;
-				arg += ",server,nowait ";
+				arg += ",server,nowait";
 			}
-			qemu_cmdline += arg;
+			qemu_command_.push_back(arg.c_str());
 		}
 	}
 
 	// Append VNC argument
-	qemu_cmdline += "-vnc ";
+	qemu_command_.push_back("-vnc");
 	// Subtract 5900 from the port number and append it to the hostname
 	std::string vnc_arg = settings_->VNCAddress + ':' + std::to_string(settings_->VNCPort - 5900);
-	qemu_cmdline += vnc_arg;
+	qemu_command_.push_back(vnc_arg.c_str());
 
-	std::cout << "Starting QEMU with command:\n" << qemu_cmdline << "\n";
+	std::cout << "Starting QEMU with command:\n";
+
+	std::string qemu_cmdline;
+	
+	for (auto it = qemu_command_.begin(); it != qemu_command_.end(); it++){
+			std::cout << *it << ' ';
+			qemu_cmdline += std::string(*it);
+			qemu_cmdline += " ";
+	}
+	std::cout << "\n";
 
 	STARTUPINFO si;
 
@@ -761,7 +759,7 @@ void QEMUController::GuacDisconnect()
 	// Restart the Guacamole client if we are not stopping
 	if (internal_state_ == InternalState::kVNCConnecting)
 	{
-		std::cout << "Guacamole client failed to connect.";
+		std::cout << "Gaucamole client failed to connect.";
 		// If we have exceeded the max number of connection attempts
 		if (++retry_count_ >= settings_->MaxAttempts)
 		{
