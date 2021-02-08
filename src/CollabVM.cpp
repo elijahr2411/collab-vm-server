@@ -1213,7 +1213,7 @@ void CollabVMServer::ProcessingThread()
 		case ActionType::kVoteEnded:
 		{
 			const std::shared_ptr<VMController>& controller = static_cast<VMAction*>(action)->controller;
-			controller->EndVote(false);
+			controller->EndVote();
 			break;
 		}
 		case ActionType::kAgentConnect:
@@ -2666,8 +2666,8 @@ void CollabVMServer::OnAdminInstruction(const std::shared_ptr<CollabVMUser>& use
 		break;
 	case kForceVote:
 	  if (user->vm_controller != nullptr) {
-		if (args.size() == 1 || (args.size() == 2 && args[1][0] == '0')) user->vm_controller->EndVote(true);
-		else if ((args.size() == 2 && args[1][0] == '1') && database_.Configuration.ModPerms & 1) user->vm_controller->EndVote(false);
+		  if (args.size() == 1 || (args.size() == 2 && args[1][0] == '0')) user->vm_controller->SkipVote(false);
+		  else if ((args.size() == 2 && args[1][0] == '1') && database_.Configuration.ModPerms & 1) user->vm_controller->SkipVote(true);
 	  };
 	  break;
 	case kMuteUser:

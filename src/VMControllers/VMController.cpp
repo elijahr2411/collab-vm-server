@@ -210,6 +210,30 @@ void VMController::EndVote(bool cancelVote)
 		RestoreVMSnapshot();
 }
 
+void VMController::SkipVote(bool vote_succeeded)
+{
+	if (vote_state_ != VoteState::kVoting) return;
+	server_.BroadcastVoteEnded(*this, users_, vote_succeeded);
+	if (settings_->VoteCooldownTime)
+	{
+		vote_state_ = VoteState::kCoolingdown;
+		boost::system::error_code ec;
+		vote_timer_.expires_from_now(std::chrono::seconds(settings_->VoteCooldownTime), ec);
+		std::shared_ptr<VMController> self = shared_from_this();
+		vote_timer_.async_wait([this, self](const boost::system::error_code& ec)
+		{
+			if (!ec)
+				vote_state_ = VoteState::kIdle;
+		});
+	}
+	else
+	{
+		vote_state_ = VoteState::kIdle;
+	}
+
+	if (vote_succeeded) RestoreVMSnapshot();	
+}
+
 void VMController::TurnRequest(const std::shared_ptr<CollabVMUser>& user, bool turnJack, bool isStaff)
 {
 	// If the user is already in the queue or they are already
