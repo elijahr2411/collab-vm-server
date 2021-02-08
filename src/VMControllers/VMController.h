@@ -115,7 +115,9 @@ public:
 
 	void Vote(CollabVMUser& user, bool vote);
 
-	void EndVote(bool cancelVote);
+	void EndVote();
+
+	void SkipVote(bool vote_succeeded);
 
 	void TurnRequest(const std::shared_ptr<CollabVMUser>& user, bool turnJack, bool isStaff);
 
