@@ -78,7 +78,7 @@ BOOL CtrlHandler(DWORD fdwCtrlType)
 
 static void SegFaultHandler(int signum)
 {
-	std::cout << "A segmentation fault occured\n";
+	std::cout << "A segmentation fault occurred\n";
 #ifndef _WIN32
 	PrintStackTrace();
 #endif
