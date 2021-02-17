@@ -131,6 +131,20 @@ public:
 		SendActionInstructions(controller, settings);
 	}
 
+	void BroadcastMOTD(VMController& controller, const VMSettings& settings)
+	{
+		std::string instr = "4.chat,0.,";
+		instr += std::to_string(settings.MOTD.length());
+		instr += '.';
+		instr += settings.MOTD;
+		instr += ';';
+
+		controller.GetUsersList().ForEachUser([this, &instr](CollabVMUser& user)
+		{
+			SendWSMessage(user, instr);
+		});
+	}
+
 	/**
 	 * Sends a message from a Guacamole client to WebSocket connection.
 	 */

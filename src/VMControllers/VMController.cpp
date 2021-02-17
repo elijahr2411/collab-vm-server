@@ -76,6 +76,11 @@ void VMController::ChangeSettings(const std::shared_ptr<VMSettings>& settings)
 	{
 		server_.ActionsChanged(*this, *settings);
 	}
+	else if (settings->MOTD != settings_->MOTD &&
+			 !settings->MOTD.empty())
+	{
+		server_.BroadcastMOTD(*this, *settings);
+	}
 }
 
 void VMController::Stop(StopReason reason)

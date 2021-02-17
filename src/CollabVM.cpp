@@ -215,7 +215,8 @@ enum VM_SETTINGS
 	kUploadsEnabled,
 	kUploadCooldownTime,
 	kUploadMaxSize,
-	kUploadMaxFilename
+	kUploadMaxFilename,
+	kMOTD
 };
 
 static const std::string vm_settings_[] = {
@@ -251,7 +252,8 @@ static const std::string vm_settings_[] = {
 	"uploads-enabled",
 	"upload-cooldown-time",
 	"upload-max-size",
-	"upload-max-filename"
+	"upload-max-filename",
+	"motd"
 };
 
 static const std::string hypervisor_names_[] {
@@ -2345,6 +2347,16 @@ void CollabVMServer::OnConnectInstruction(const std::shared_ptr<CollabVMUser>& u
 	if (!user->username || name_taken)
 		ChangeUsername(user, GenerateUsername(), UsernameChangeResult::kSuccess, false);
 
+	if (!controller.GetSettings().MOTD.empty())
+	{
+		instr = "4.chat,0.,";
+		instr += std::to_string(controller.GetSettings().MOTD.length());
+		instr += '.';
+		instr += controller.GetSettings().MOTD;
+		instr += ';';
+		SendWSMessage(*user, instr);
+	}
+
 	user->guac_user = new GuacUser(this, user);
 	controller.AddUser(user);
 
@@ -3794,6 +3806,17 @@ bool CollabVMServer::ParseVMSettings(VMSettings& vm, rapidjson::Value& settings,
 						valid = false;
 					}
 					break;
+				case kMOTD:
+					if (value.IsString())
+					{
+						vm.MOTD = string(value.GetString(), value.GetStringLength());
+					}
+					else
+					{
+						WriteJSONObject(writer, vm_settings_[kMOTD], invalid_object_);
+						valid = false;
+					}
+					break;
 				}
 				break;
 			}
@@ -4192,6 +4215,10 @@ void CollabVMServer::WriteServerSettings(rapidjson::Writer<rapidjson::StringBuff
 			case kUploadMaxFilename:
 				writer.String(vm_settings_[kUploadMaxFilename].c_str());
 				writer.Uint(vm->UploadMaxFilename);
+				break;
+			case kMOTD:
+				writer.String(vm_settings_[kMOTD].c_str());
+				writer.String(vm->MOTD.c_str());
 				break;
 			}
 		}
