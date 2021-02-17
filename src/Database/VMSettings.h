@@ -65,7 +65,8 @@ struct VMSettings
 	HypervisorEnum Hypervisor;
 	bool AutoStart;
 	std::string DisplayName;
-	std::string Description;
+	std::string MOTD;
+	std::string Description; // lol unused
 	bool RestoreOnShutdown;
 	bool RestoreOnTimeout;
 	bool RestoreHeartbeat;
