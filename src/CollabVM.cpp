@@ -3895,12 +3895,12 @@ bool CollabVMServer::ParseVMSettings(VMSettings& vm, rapidjson::Value& settings,
 				case kMOTD:
 					if (value.IsString())
 					{
-							vm.MOTD = string(value.GetString(), value.GetStringLength());
+						vm.MOTD = string(value.GetString(), value.GetStringLength());
 					}
 					else
 					{
-							WriteJSONObject(writer, vm_settings_[kMOTD], invalid_object_);
-							valid = false;
+						WriteJSONObject(writer, vm_settings_[kMOTD], invalid_object_);
+						valid = false;
 					}
 					break;
 				}
