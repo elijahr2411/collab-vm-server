@@ -25,8 +25,6 @@
 #include "id.h"
 #include "error.h"
 
-//#include <ossp/uuid.h>
-
 #include <stdlib.h>
 
 char* guac_generate_id(char prefix) {

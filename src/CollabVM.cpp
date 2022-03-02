@@ -54,7 +54,6 @@ Please email rightowner@gmail.com for any assistance.
 	#include "guacamole/protocol.h"
 #endif
 
-//#include <ossp/uuid.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/reader.h>
 #include <rapidjson/stringbuffer.h>
@@ -432,39 +431,6 @@ void CollabVMServer::OnClose(std::weak_ptr<websocketmm::websocket_user> handle) 
 		PostAction<UserAction>(*handle_sp->GetUserData().user, ActionType::kRemoveConnection);
 	}
 }
-
-/*
-std::string CollabVMServer::GenerateUuid()
-{
-	char buffer[UUID_LEN_STR + 1];
-
-	uuid_t* uuid;
-
-    // Attempt to create UUID objec
-	if (uuid_create(&uuid) != UUID_RC_OK) {
-		throw std::string("Could not allocate memory for UUID");
-	}
-
-    // Generate random UUID
-	if (uuid_make(uuid, UUID_MAKE_V4) != UUID_RC_OK) {
-		uuid_destroy(uuid);
-		throw std::string("UUID generation failed");
-	}
-
-	char* identifier = buffer;
-	size_t identifier_length = sizeof(buffer);
-
-    // Build connection ID from UUID
-	if (uuid_export(uuid, UUID_FMT_STR, &identifier, &identifier_length) != UUID_RC_OK) {
-		uuid_destroy(uuid);
-		throw std::string("Conversion of UUID to connection ID failed");
-	}
-
-	uuid_destroy(uuid);
-
-	return std::string(buffer, identifier_length-1);
-}
-*/
 
 void CollabVMServer::OnMessageFromWS(std::weak_ptr<websocketmm::websocket_user> handle, std::shared_ptr<const websocketmm::websocket_message> msg) {
 	if(auto handle_sp = handle.lock()) {
