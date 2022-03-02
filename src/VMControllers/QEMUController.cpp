@@ -35,7 +35,7 @@ static const std::string kErrorMessages[] = {
 };
 
 /**
- * A single thread is created for all QMPClient and AgentClient instances
+ * A single thread is created for all QMPClient instances
  * to use.
  */
 static std::mutex qmp_thread_mutex_;
@@ -132,7 +132,6 @@ QEMUController::QEMUController(CollabVMServer& server, boost::asio::io_service& 
 
 	InitQMP();
 
-	InitAgent(*settings, *qmp_service_);
 }
 
 void QEMUController::ChangeSettings(const std::shared_ptr<VMSettings>& settings) {
@@ -153,15 +152,6 @@ void QEMUController::ChangeSettings(const std::shared_ptr<VMSettings>& settings)
 		// TODO:
 		// InitQMP();
 		restart = true;
-	}
-	if(settings->AgentEnabled) {
-		if(!settings_->AgentEnabled) {
-			InitAgent(*settings, *qmp_service_);
-		}
-	} else {
-		if(settings_->AgentEnabled) {
-			InitAgent(*settings, *qmp_service_);
-		}
 	}
 	VMController::ChangeSettings(settings);
 	settings_ = settings;
@@ -436,48 +426,6 @@ void QEMUController::StartQEMU() {
 	}
 	*/
 
-	std::string arg;
-	if(settings_->AgentEnabled) {
-		if(settings_->AgentUseVirtio) {
-			// -chardev socket,id=agent,host=10.0.2.15,port=5700,nodelay,server,nowait -device virtio-serial -device virtserialport,chardev=agent
-			args_copy.push_back("-chardev");
-			arg = "socket,id=agent,";
-			if(settings_->AgentSocketType == VMSettings::SocketType::kTCP) {
-				arg += "host=";
-				arg += settings_->AgentAddress;
-				arg += ",port=";
-				arg += std::to_string(settings_->AgentPort);
-				arg += ",nodelay";
-			} else {
-				arg += "path=";
-				arg += agent_address_;
-			}
-			arg += ",server,nowait";
-			args_copy.push_back(arg.c_str());
-
-			args_copy.push_back("-device");
-			args_copy.push_back("virtio-serial");
-
-			args_copy.push_back("-device");
-			args_copy.push_back("virtserialport,chardev=agent");
-		} else {
-			// Serial address
-			args_copy.push_back("-serial");
-			if(settings_->AgentSocketType == VMSettings::SocketType::kTCP) {
-				arg = "tcp:";
-				arg += agent_address_;
-				// nowait is used because the AgentClient does not connect
-				// until after the VM has been started with QMP
-				arg += ",server,nowait,nodelay";
-			} else {
-				arg = "unix:";
-				arg += agent_address_;
-				arg += ",server,nowait";
-			}
-			args_copy.push_back(arg.c_str());
-		}
-	}
-
 	// Append VNC argument
 	args_copy.push_back("-vnc");
 	// Subtract 5900 from the port number and append it to the hostname
@@ -568,46 +516,6 @@ void QEMUController::StartQEMU() {
 		}
 
 		std::string arg;
-		if(settings_->AgentEnabled) {
-			if(settings_->AgentUseVirtio) {
-				// -chardev socket,id=agent,host=10.0.2.15,port=5700,nodelay,server,nowait -device virtio-serial -device virtserialport,chardev=agent
-				args_copy.push_back("-chardev");
-				arg = "socket,id=agent,";
-				if(settings_->AgentSocketType == VMSettings::SocketType::kTCP) {
-					arg += "host=";
-					arg += settings_->AgentAddress;
-					arg += ",port=";
-					arg += std::to_string(settings_->AgentPort);
-					arg += ",nodelay";
-				} else {
-					arg += "path=";
-					arg += agent_address_;
-				}
-				arg += ",server,nowait";
-				args_copy.push_back(arg.c_str());
-
-				args_copy.push_back("-device");
-				args_copy.push_back("virtio-serial");
-
-				args_copy.push_back("-device");
-				args_copy.push_back("virtserialport,chardev=agent");
-			} else {
-				// Serial address
-				args_copy.push_back("-serial");
-				if(settings_->AgentSocketType == VMSettings::SocketType::kTCP) {
-					arg = "tcp:";
-					arg += agent_address_;
-					// nowait is used because the AgentClient does not connect
-					// until after the VM has been started with QMP
-					arg += ",server,nowait,nodelay";
-				} else {
-					arg = "unix:";
-					arg += agent_address_;
-					arg += ",server,nowait";
-				}
-				args_copy.push_back(arg.c_str());
-			}
-		}
 
 		// Append VNC argument
 		args_copy.push_back("-vnc");
@@ -845,9 +753,6 @@ void QEMUController::OnQMPStateChange(QMPClient::QMPState state) {
 					internal_state_ = InternalState::kVNCConnecting;
 					StartGuacClient();
 				}
-				if(agent_) {
-					agent_->Connect(std::weak_ptr<AgentCallback>(std::static_pointer_cast<AgentCallback>(shared_from_this())));
-				}
 			} else
 				qmp_->Disconnect();
 			break;
@@ -967,25 +872,6 @@ std::optional<std::vector<std::string>> QEMUController::SplitCommandLine(const s
 			return std::nullopt;
 
 		return split_line;
-}
-
-void QEMUController::OnAgentDisconnect(bool protocol_error) {
-	// Do not try to reconnect if we are shutting down or if
-	// the agent was already successfully connected
-	if((internal_state_ == InternalState::kVNCConnecting ||
-		internal_state_ == InternalState::kConnected) &&
-	   !protocol_error) {
-		boost::system::error_code ec;
-		agent_timer_.expires_from_now(std::chrono::seconds(1), ec);
-		auto self = shared_from_this();
-		agent_timer_.async_wait([this, self](const boost::system::error_code& ec) {
-			if(!ec && (internal_state_ == InternalState::kVNCConnecting |
-					   internal_state_ == InternalState::kConnected))
-				agent_->Connect(std::weak_ptr<AgentCallback>(std::static_pointer_cast<AgentCallback>(shared_from_this())));
-		});
-	} else {
-		VMController::OnAgentDisconnect(protocol_error);
-	}
 }
 
 /*
