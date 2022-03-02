@@ -162,8 +162,6 @@ class QEMUController : public VMController, public QMPCallback {
 	 */
 	std::optional<std::vector<std::string>> SplitCommandLine(const std::string& command);
 
-	void OnAgentDisconnect(bool protocol_error) override;
-
 	enum class InternalState {
 		kInactive, // The controller hasn't been started
 		//kQEMUStarting,	// The QEMU hypervisor is starting

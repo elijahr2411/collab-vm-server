@@ -135,7 +135,6 @@ class CollabVMServer : public std::enable_shared_from_this<CollabVMServer> {
 	GuacamoleInstruction(Chat)
 	GuacamoleInstruction(Turn)
 	GuacamoleInstruction(Vote)
-	GuacamoleInstruction(File)
 
 #undef GuacamoleInstruction
 

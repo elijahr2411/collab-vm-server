@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "CollabVMUser.h"
-#include "UploadInfo.h"
 #include "GuacClient.h"
 #include "UserList.h"
 
@@ -21,7 +20,7 @@ struct VMSettings;
  * creating a Guacamole client, and possibly a guest service controller. Derived
  * classes will implement functionality specific to the hypervisor.
  */
-class VMController : public std::enable_shared_from_this<VMController>, public AgentCallback {
+class VMController : public std::enable_shared_from_this<VMController> {
 	friend GuacBroadcastSocket;
 
    public:

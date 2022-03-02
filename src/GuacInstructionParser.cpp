@@ -24,8 +24,7 @@ namespace GuacInstructionParser {
 		{ "admin", &CollabVMServer::OnAdminInstruction },
 		{ "nop", &CollabVMServer::OnNopInstruction },
 		{ "list", &CollabVMServer::OnListInstruction },
-		{ "vote", &CollabVMServer::OnVoteInstruction },
-		{ "file", &CollabVMServer::OnFileInstruction }
+		{ "vote", &CollabVMServer::OnVoteInstruction }
 	};
 
 	//constexpr size_t instruction_count = sizeof(instructions)/sizeof(Instruction);

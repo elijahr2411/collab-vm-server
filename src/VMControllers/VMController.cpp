@@ -20,8 +20,7 @@ VMController::VMController(CollabVMServer& server, boost::asio::io_service& serv
 
 void VMController::ChangeSettings(const std::shared_ptr<VMSettings>& settings) {
 	if(settings->TurnsEnabled != settings_->TurnsEnabled ||
-	   settings->VotesEnabled != settings_->VotesEnabled ||
-	   settings->UploadsEnabled != settings_->UploadsEnabled) {
+	   settings->VotesEnabled != settings_->VotesEnabled ) {
 		server_.ActionsChanged(*this, *settings);
 	} else if(settings->MOTD != settings_->MOTD &&
 			  !settings->MOTD.empty()) {
