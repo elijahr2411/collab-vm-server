@@ -2737,6 +2737,10 @@ void CollabVMServer::WriteServerSettings(rapidjson::Writer<rapidjson::StringBuff
 					writer.String(vm_settings_[kVoteTime].c_str());
 					writer.Uint(vm->VoteTime);
 					break;
+				case kVoteCooldownTime:
+					writer.String(vm_settings_[kVoteCooldownTime].c_str());
+					writer.Uint(vm->VoteCooldownTime);
+					break;
 				case kMOTD:
 					writer.String(vm_settings_[kMOTD].c_str());
 					writer.String(vm->MOTD.c_str());
